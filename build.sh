@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 0) Carica variabili da .env
+# 0) Carica variabili da   .env
 if [[ -f .env ]]; then
   # shellcheck disable=SC1091
   source .env
