@@ -31,7 +31,7 @@ RUN protoc \
 COPY main.go .
 
 # 5) Inizializza il modulo e risolvi tutte le dipendenze
-RUN go mod init github.com/meshtastic/meshspy && \
+RUN go mod init github.com/folletto95/meshspy && \
     go get github.com/eclipse/paho.mqtt.golang@v1.5.0 \
            github.com/tarm/serial@latest \
            google.golang.org/protobuf@latest && \
