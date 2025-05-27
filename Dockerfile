@@ -1,56 +1,54 @@
 # syntax=docker/dockerfile:1.4
 
-#############################################
-# Stage 1: builder                         #
-#############################################
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-alpine
 
-ARG PROTO_VERSION
+ARG PROTO_VERSION=v2.0.14
 ARG GOOS=linux
 ARG GOARCH=amd64
 ARG GOARM=
 
-WORKDIR /app
-
-# 1) Installa protoc, git, protoc-gen-go
+# 1) Installa protoc, git e protoc-gen-go
 RUN apk add --no-cache git protobuf protoc ca-certificates && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0
 
-# 2) Clona e genera pb/meshtastic
-RUN git clone --depth 1 --branch "${PROTO_VERSION}" \
-      https://github.com/meshtastic/protobufs.git protobufs && \
+WORKDIR /src
+
+# 2) Clona i .proto di Meshtastic e patcha il go_package
+RUN git clone --depth 1 --branch "${PROTO_VERSION}" https://github.com/meshtastic/protobufs.git protobufs && \
     mkdir -p pb/meshtastic && \
     for f in protobufs/meshtastic/*.proto; do \
       sed -e 's|option go_package = .*;|option go_package = "meshspy/pb/meshtastic";|' \
           "$f" > pb/meshtastic/"$(basename "$f")"; \
-    done && \
-    protoc \
+    done
+
+# 3) Genera i binding Go
+RUN protoc \
       --proto_path=protobufs \
       --go_out=pb/meshtastic --go_opt=paths=source_relative \
       protobufs/meshtastic/*.proto
 
-# 3) Copia il tuo main.go
-COPY main.go ./
+# 4) Copia il tuo file principale
+COPY main.go .
 
-# 4) Inizializza il modulo e lascia che go mod tidy rilevi
-#    sia gli import esterni sia il pkg locale in pb/meshtastic
+# 5) Inizializza il modulo e risolvi tutte le dipendenze
 RUN go mod init meshspy && \
+    go get github.com/eclipse/paho.mqtt.golang@v1.5.0 \
+           github.com/tarm/serial@latest \
+           google.golang.org/protobuf@latest && \
     go mod tidy
 
-# 5) Compila statico per il target
+# 6) Compila il binario statico per la piattaforma target
 RUN CGO_ENABLED=0 \
     GOOS=${GOOS} GOARCH=${GOARCH} \
     $( [ -n "${GOARM}" ] && echo "GOARM=${GOARM}" ) \
     go build -o meshspy .
 
-#############################################
-# Stage 2: runtime                         #
-#############################################
+# 7) Immagine runtime minimal
 FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 
-WORKDIR /root/
-COPY --from=builder /app/meshspy .
+WORKDIR /app
+COPY --from=0 /src/meshspy .
 
 RUN addgroup -S mesh && adduser -S -G mesh mesh
 USER mesh
