@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 1) Carica variabili da .env se presente
+# Carica variabili da .env se presente
 if [[ -f .env ]]; then
   # shellcheck disable=SC1091
   source .env
 fi
 
-# 2) Login automatico
+# Login automatico se configurato
 if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
   echo "$DOCKER_PASSWORD" | docker login docker.io \
     --username "$DOCKER_USERNAME" --password-stdin
 fi
 
-# 3) Parametri (override in .env o CLI)
+# Parametri (override in .env o CLI)
 IMAGE="${IMAGE:-nicbad/meshspy}"
 TAG="${TAG:-latest}"
 GOOS="linux"
 ARCHS=(amd64 386 armv6 armv7 arm64)
 
-# 4) Se manca go.mod, lo generiamo
+# Se manca go.mod, lo generiamo con Go ≥1.24
 if [[ ! -f go.mod ]]; then
   echo "🛠 Generating go.mod and go.sum…"
   docker run --rm \
@@ -30,7 +30,7 @@ if [[ ! -f go.mod ]]; then
       go mod tidy"
 fi
 
-# 5) Mappe per build-arg e annotazioni
+# Mappe per build-arg e manifest annotate
 declare -A GOARCH=( [amd64]=amd64 [386]=386 [armv6]=arm [armv7]=arm [arm64]=arm64 )
 declare -A GOARM=(  [armv6]=6     [armv7]=7                )
 declare -A MAN_OPTS=(
@@ -46,7 +46,7 @@ for arch in "${ARCHS[@]}"; do
   TAG_ARCH="${IMAGE}:${TAG}-${arch}"
   echo " • Building $TAG_ARCH"
 
-  # build mono-arch
+  # Build mono-arch
   build_args=( --no-cache -t "$TAG_ARCH" )
   build_args+=( --build-arg "GOOS=$GOOS" )
   build_args+=( --build-arg "GOARCH=${GOARCH[$arch]}" )
@@ -56,16 +56,16 @@ for arch in "${ARCHS[@]}"; do
   build_args+=( . )
   docker build "${build_args[@]}"
 
-  # push slice
+  # Push slice
   echo " → Pushing $TAG_ARCH"
   docker push "$TAG_ARCH"
 done
 
 echo "📦 Preparing manifest ${IMAGE}:${TAG}"
-# rimuove eventuale manifest esistente
+# Rimuove eventuale manifest esistente
 docker manifest rm "${IMAGE}:${TAG}" >/dev/null 2>&1 || true
 
-# crea manifest multi-arch
+# Crea manifest multi-arch
 manifest_args=( manifest create "${IMAGE}:${TAG}" )
 for arch in "${ARCHS[@]}"; do
   manifest_args+=( "${IMAGE}:${TAG}-${arch}" )
