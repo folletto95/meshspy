@@ -2,11 +2,9 @@ package main
 
 import (
     "bufio"
-    "encoding/binary"
     "fmt"
     "io"
     "log"
-    "os"
     "time"
 
     mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -19,17 +17,15 @@ import (
 
 // leggiVarintFrame legge un frame Protobuf con prefisso varint per la lunghezza
 func leggiVarintFrame(r io.Reader) ([]byte, error) {
-    var (
-        length uint64
-        buf    [1]byte
-    )
+    var length uint64
     for shift := uint(0); ; shift += 7 {
-        if _, err := r.Read(buf[:]); err != nil {
+        buf := make([]byte, 1)
+        if _, err := r.Read(buf); err != nil {
             return nil, err
         }
         b := buf[0]
         length |= uint64(b&0x7F) << shift
-        if (b & 0x80) == 0 {
+        if b&0x80 == 0 {
             break
         }
     }
@@ -81,26 +77,28 @@ func main() {
             continue
         }
 
-        // Unmarshal ServiceEnvelope (mqtt.proto)
+        // 1) Unmarshal ServiceEnvelope (mqtt.proto)
         var env pb.ServiceEnvelope
         if err := proto.Unmarshal(frame, &env); err != nil {
             log.Printf("Unmarshal ServiceEnvelope: %v", err)
             continue
         }
 
-        // Unmarshal MeshPacket (mesh.proto)
+        // 2) Unmarshal MeshPacket (mesh.proto)
         var pkt pb.MeshPacket
         if err := proto.Unmarshal(env.GetPayload(), &pkt); err != nil {
             log.Printf("Unmarshal MeshPacket: %v", err)
             continue
         }
 
+        // 3) Estrai ID e testo
         nodeID := fmt.Sprintf("0x%08x", pkt.GetFrom())
         text := ""
         if d := pkt.GetDecoded(); d != nil {
             text = d.GetText()
         }
 
+        // 4) Pubblica su MQTT
         payload := fmt.Sprintf(`{"node":"%s","ts":%d,"text":"%s"}`,
             nodeID, time.Now().Unix(), text)
         tok := client.Publish(mqttTopic, 0, false, payload)

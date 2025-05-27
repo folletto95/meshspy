@@ -31,8 +31,8 @@ docker run --rm \
     git clone --depth 1 --branch ${PROTO_VERSION} https://github.com/meshtastic/protobufs.git protobufs && \
     mkdir -p pb/meshtastic && \
     protoc \
+      --proto_path=protobufs \
       --go_out=pb/meshtastic --go_opt=paths=source_relative \
-      --proto_path=protobufs/meshtastic \
       protobufs/meshtastic/*.proto"
 
 # 4) Se manca go.mod, lo generiamo con Go ≥1.24
@@ -42,7 +42,9 @@ if [[ ! -f go.mod ]]; then
     -v "${PWD}":/app -w /app \
     golang:1.24-alpine sh -c "\
       go mod init ${IMAGE#*/} && \
-      go get github.com/eclipse/paho.mqtt.golang@v1.5.0 github.com/tarm/serial@latest google.golang.org/protobuf@latest && \
+      go get github.com/eclipse/paho.mqtt.golang@v1.5.0 \
+             github.com/tarm/serial@latest \
+             google.golang.org/protobuf@latest && \
       go mod tidy"
 fi
 
