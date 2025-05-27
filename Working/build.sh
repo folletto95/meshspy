@@ -1,52 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 0) Carica variabili da .env se presente
+# Carica variabili da .env se presente
 if [[ -f .env ]]; then
   # shellcheck disable=SC1091
   source .env
 fi
 
-# 1) Login automatico se configurato
+# Login automatico se configurato
 if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
   echo "$DOCKER_PASSWORD" | docker login docker.io \
     --username "$DOCKER_USERNAME" --password-stdin
 fi
 
-# 2) Parametri (override in .env o CLI)
+# Parametri (override in .env o CLI)
 IMAGE="${IMAGE:-nicbad/meshspy}"
 TAG="${TAG:-latest}"
 GOOS="linux"
 ARCHS=(amd64 386 armv6 armv7 arm64)
-PROTO_VERSION="${PROTO_VERSION:-v2.0.14}"
 
-# 3) Fetch & genera binding Protobuf
-echo "🔄 Fetching Meshtastic protobufs@$PROTO_VERSION and generating Go code…"
-docker run --rm \
-  -v "${PWD}":/app -w /app \
-  golang:1.21-alpine sh -c "\
-    apk add --no-cache git protobuf && \
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0 && \
-    rm -rf protobufs pb && \
-    git clone --depth 1 --branch ${PROTO_VERSION} https://github.com/meshtastic/protobufs.git protobufs && \
-    mkdir -p pb/meshtastic && \
-    protoc \
-      --go_out=pb/meshtastic --go_opt=paths=source_relative \
-      --proto_path=protobufs/meshtastic \
-      protobufs/meshtastic/*.proto"
-
-# 4) Se manca go.mod, lo generiamo con Go ≥1.24
+# Se manca go.mod, lo generiamo con Go ≥1.24
 if [[ ! -f go.mod ]]; then
   echo "🛠 Generating go.mod and go.sum…"
   docker run --rm \
     -v "${PWD}":/app -w /app \
     golang:1.24-alpine sh -c "\
       go mod init ${IMAGE#*/} && \
-      go get github.com/eclipse/paho.mqtt.golang@v1.5.0 github.com/tarm/serial@latest google.golang.org/protobuf@latest && \
+      go get github.com/eclipse/paho.mqtt.golang@v1.5.0 github.com/tarm/serial@latest && \
       go mod tidy"
 fi
 
-# 5) Mappe per build-arg e manifest annotate
+# Mappe per build-arg e manifest annotate
 declare -A GOARCH=( [amd64]=amd64 [386]=386 [armv6]=arm [armv7]=arm [arm64]=arm64 )
 declare -A GOARM=(  [armv6]=6     [armv7]=7                )
 declare -A MAN_OPTS=(

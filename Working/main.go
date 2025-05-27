@@ -2,43 +2,19 @@ package main
 
 import (
     "bufio"
-    "encoding/binary"
     "fmt"
     "io"
     "log"
     "os"
+    "regexp"
     "time"
 
     mqtt "github.com/eclipse/paho.mqtt.golang"
     "github.com/tarm/serial"
-    "google.golang.org/protobuf/proto"
-
-    // binding Go generati in ./pb/meshtastic
-    pb "meshspy/pb/meshtastic"
 )
 
-// leggiVarintFrame legge un frame Protobuf con prefisso varint per la lunghezza
-func leggiVarintFrame(r io.Reader) ([]byte, error) {
-    var (
-        length uint64
-        buf    [1]byte
-    )
-    for shift := uint(0); ; shift += 7 {
-        if _, err := r.Read(buf[:]); err != nil {
-            return nil, err
-        }
-        b := buf[0]
-        length |= uint64(b&0x7F) << shift
-        if (b & 0x80) == 0 {
-            break
-        }
-    }
-    frame := make([]byte, length)
-    if _, err := io.ReadFull(r, frame); err != nil {
-        return nil, err
-    }
-    return frame, nil
-}
+// regex per catturare l'ID dopo "from="
+var nodeRe = regexp.MustCompile(`from=(0x[0-9a-fA-F]+)`)
 
 func main() {
     serialPort := getEnv("SERIAL_PORT", "/dev/ttyUSB0")
@@ -49,6 +25,7 @@ func main() {
     mqttUser := getEnv("MQTT_USER", "")
     mqttPass := getEnv("MQTT_PASS", "")
 
+    // setup serial
     cfg := &serial.Config{Name: serialPort, Baud: baudRate, ReadTimeout: time.Second * 5}
     port, err := serial.OpenPort(cfg)
     if err != nil {
@@ -56,7 +33,10 @@ func main() {
     }
     defer port.Close()
 
-    opts := mqtt.NewClientOptions().AddBroker(mqttBroker).SetClientID(clientID)
+    // setup MQTT
+    opts := mqtt.NewClientOptions().
+        AddBroker(mqttBroker).
+        SetClientID(clientID)
     if mqttUser != "" {
         opts.SetUsername(mqttUser)
         opts.SetPassword(mqttPass)
@@ -67,50 +47,50 @@ func main() {
     }
     defer client.Disconnect(250)
 
-    log.Printf("In ascolto su %s a %d baud", serialPort, baudRate)
+    log.Printf("In ascolto su seriale %s a %d baud", serialPort, baudRate)
     reader := bufio.NewReader(port)
 
+    var lastNode string
+
     for {
-        frame, err := leggiVarintFrame(reader)
+        line, err := reader.ReadString('\n')
         if err != nil {
             if err == io.EOF {
                 continue
             }
-            log.Printf("Errore leggendo frame: %v", err)
+            log.Printf("Errore lettura seriale: %v", err)
             time.Sleep(time.Second)
             continue
         }
 
-        // Unmarshal ServiceEnvelope (mqtt.proto)
-        var env pb.ServiceEnvelope
-        if err := proto.Unmarshal(frame, &env); err != nil {
-            log.Printf("Unmarshal ServiceEnvelope: %v", err)
+        node := parseNodeName(line)
+        // ignora righe senza ID, ID vuoto o "0x0"
+        if node == "" || node == "0x0" {
             continue
         }
-
-        // Unmarshal MeshPacket (mesh.proto)
-        var pkt pb.MeshPacket
-        if err := proto.Unmarshal(env.GetPayload(), &pkt); err != nil {
-            log.Printf("Unmarshal MeshPacket: %v", err)
+        // evita duplicati consecutivi
+        if node == lastNode {
             continue
         }
+        lastNode = node
 
-        nodeID := fmt.Sprintf("0x%08x", pkt.GetFrom())
-        text := ""
-        if d := pkt.GetDecoded(); d != nil {
-            text = d.GetText()
-        }
-
-        payload := fmt.Sprintf(`{"node":"%s","ts":%d,"text":"%s"}`,
-            nodeID, time.Now().Unix(), text)
+        payload := fmt.Sprintf(`{"node":"%s","ts":%d}`, node, time.Now().Unix())
         tok := client.Publish(mqttTopic, 0, false, payload)
         tok.Wait()
         if tok.Error() != nil {
             log.Printf("Errore publish MQTT: %v", tok.Error())
         } else {
-            log.Printf("Pubblicato: %s", payload)
+            log.Printf("Pubblicato su %s: %s", mqttTopic, payload)
         }
     }
+}
+
+func parseNodeName(line string) string {
+    m := nodeRe.FindStringSubmatch(line)
+    if len(m) == 2 {
+        return m[1] // es. "0xbb210daf"
+    }
+    return ""
 }
 
 func getEnv(key, def string) string {

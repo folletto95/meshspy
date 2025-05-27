@@ -1,33 +1,42 @@
 # Dockerfile
-# syntax=docker/dockerfile:1.4
 
-#############################################
-# 1) Builder: Go cross‐compile              #
-#############################################
-FROM golang:1.24-alpine AS builder
-
-# Arg default, disponibili in questo stage
-ARG GOOS=linux
-ARG GOARCH=amd64
-ARG GOARM=
-
+############################################
+# Stage 1: builder
+############################################
+FROM golang:1.21-alpine AS builder
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
-
+# Copia tutto il sorgente, inclusa la cartella pb/ con i .pb.go generati
 COPY . .
 
-# Cross-compile statico per target
-RUN CGO_ENABLED=0 \
-    GOOS=$GOOS \
-    GOARCH=$GOARCH \
-    GOARM=$GOARM \
+# Se non esiste go.mod, inizializza il modulo
+RUN go mod init meshspy || true
+
+# Scarica le dipendenze (incluso protobuf runtime)
+RUN go get github.com/eclipse/paho.mqtt.golang@v1.5.0 \
+           github.com/tarm/serial@latest \
+           google.golang.org/protobuf@latest && \
+    go mod tidy
+
+# Compila statico per Linux
+ARG GOOS
+ARG GOARCH
+ARG GOARM
+RUN CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} \
+    $( [ -n "${GOARM:-}" ] && echo "GOARM=${GOARM}" ) \
     go build -o meshspy .
 
-#############################################
-# 2) Runtime minimal “scratch”              #
-#############################################
-FROM scratch
-COPY --from=builder /app/meshspy /meshspy
-ENTRYPOINT ["/meshspy"]
+############################################
+# Stage 2: runtime
+############################################
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /root/
+COPY --from=builder /app/meshspy .
+
+# Utente non-root
+RUN addgroup -S mesh && adduser -S -G mesh mesh
+USER mesh
+
+ENTRYPOINT ["./meshspy"]
