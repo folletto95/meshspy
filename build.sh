@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # build.sh
 set -euo pipefail
-
 if [[ -f .env ]]; then source .env; fi
 
 ARCHS=(amd64 386 armv6 armv7 arm64)
@@ -15,13 +14,11 @@ declare -A MAN_OPTS=(
   [arm64]="--os linux --arch arm64"
 )
 
-# login (opzionale)
+# optional login
 if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
-  echo "$DOCKER_PASSWORD" \
-    | docker login --username "$DOCKER_USERNAME" --password-stdin
+  echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
 fi
 
-# build & push single‐arch
 for arch in "${ARCHS[@]}"; do
   TAG_ARCH="${IMAGE}:${TAG}-${arch}"
   echo "🔨 Building ${TAG_ARCH}"
@@ -35,13 +32,10 @@ for arch in "${ARCHS[@]}"; do
   docker push "$TAG_ARCH"
 done
 
-# crea e push manifest
 echo "📦 Creating manifest ${IMAGE}:${TAG}"
 docker manifest rm "${IMAGE}:${TAG}" 2>/dev/null || true
 margs=( manifest create "${IMAGE}:${TAG}" )
-for arch in "${ARCHS[@]}"; do
-  margs+=( "${IMAGE}:${TAG}-${arch}" )
-done
+for arch in "${ARCHS[@]}"; do margs+=( "${IMAGE}:${TAG}-${arch}" ); done
 docker "${margs[@]}"
 for arch in "${ARCHS[@]}"; do
   docker manifest annotate "${IMAGE}:${TAG}" \
@@ -49,4 +43,4 @@ for arch in "${ARCHS[@]}"; do
 done
 docker manifest push "${IMAGE}:${TAG}"
 
-echo "✅ Multi‐arch image available: ${IMAGE}:${TAG}"
+echo "✅ Done: ${IMAGE}:${TAG}"

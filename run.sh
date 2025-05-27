@@ -6,10 +6,7 @@ if [[ -f .env ]]; then source .env; fi
 SERIAL_PORT=${SERIAL_PORT:-/dev/ttyACM0}
 SERIAL_GROUP=${SERIAL_GROUP:-dialout}
 GID=$(getent group "$SERIAL_GROUP" | cut -d: -f3)
-if [[ -z "$GID" ]]; then
-  echo "❌ Gruppo '$SERIAL_GROUP' non trovato sul host"
-  exit 1
-fi
+if [[ -z "$GID" ]]; then echo "❌ Gruppo '$SERIAL_GROUP' non trovato"; exit 1; fi
 
 docker run -d \
   --platform linux/arm/v6 \

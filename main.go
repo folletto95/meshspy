@@ -13,7 +13,6 @@ import (
     "github.com/tarm/serial"
     "google.golang.org/protobuf/proto"
 
-    // binding Go generati in pb/meshtastic
     pb "meshspy/pb/meshtastic"
 )
 
