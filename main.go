@@ -6,10 +6,14 @@ import (
     "log"
     "os"
     "time"
+	"regexp"
 
     mqtt "github.com/eclipse/paho.mqtt.golang"
     "github.com/tarm/serial"
 )
+
+// regex per catturare l'ID esadecimale dopo "from="
+var nodeRe = regexp.MustCompile(`from=(0x[0-9a-fA-F]+)`)
 
 func main() {
     // Leggi configurazione da variabili d'ambiente
@@ -82,10 +86,10 @@ func main() {
 // parseNodeName estrae il nome del nodo dalla linea letta.
 // Modifica il pattern secondo il formato effettivo dei dati.
 func parseNodeName(line string) string {
-    // Esempio: "NODE: berry001\n"
-    var name string
-    if n, _ := fmt.Sscanf(line, "NODE: %s\n", &name); n == 1 {
-        return name
+    m := nodeRe.FindStringSubmatch(line)
+    if len(m) == 2 {
+        // es. m[1] = "0xbb210daf"
+        return m[1]
     }
     return ""
 }
