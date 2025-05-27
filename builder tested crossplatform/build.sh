@@ -35,7 +35,7 @@ for arch in "${ARCHS[@]}"; do
   TAG_ARCH="${IMAGE}:${TAG}-${arch}"
   echo " • Building $TAG_ARCH"
 
-  # build
+  # Build mono-arch
   build_args=( --no-cache -t "$TAG_ARCH" )
   build_args+=( --build-arg "GOOS=$GOOS" )
   build_args+=( --build-arg "GOARCH=${GOARCH[$arch]}" )
@@ -45,16 +45,16 @@ for arch in "${ARCHS[@]}"; do
   build_args+=( . )
   docker build "${build_args[@]}"
 
-  # push slice
+  # Push slice
   echo " → Pushing $TAG_ARCH"
   docker push "$TAG_ARCH"
 done
 
 echo "📦 Preparing manifest ${IMAGE}:${TAG}"
-# rimuove eventuale manifest locale pregresso
+# Rimuove eventuale manifest locale pregresso
 docker manifest rm "${IMAGE}:${TAG}" >/dev/null 2>&1 || true
 
-# crea manifest multi-arch
+# Crea manifest multi-arch
 manifest_args=( manifest create "${IMAGE}:${TAG}" )
 for arch in "${ARCHS[@]}"; do
   manifest_args+=( "${IMAGE}:${TAG}-${arch}" )
