@@ -3,98 +3,96 @@ package main
 import (
     "bufio"
     "fmt"
+    "io"
     "log"
     "os"
+    "regexp"
     "time"
-	"regexp"
 
     mqtt "github.com/eclipse/paho.mqtt.golang"
     "github.com/tarm/serial"
 )
 
-// regex per catturare l'ID esadecimale dopo "from="
+// regex per catturare l'ID dopo "from="
 var nodeRe = regexp.MustCompile(`from=(0x[0-9a-fA-F]+)`)
 
 func main() {
-    // Leggi configurazione da variabili d'ambiente
     serialPort := getEnv("SERIAL_PORT", "/dev/ttyUSB0")
     baudRate := getEnvInt("BAUD_RATE", 115200)
-    mqttBroker := getEnv("MQTT_BROKER", "tcp://smpisa.ddns.net:1883")
+    mqttBroker := getEnv("MQTT_BROKER", "tcp://mqtt-broker:1883")
     mqttTopic := getEnv("MQTT_TOPIC", "meshspy/nodo/connesso")
     clientID := getEnv("MQTT_CLIENT_ID", "meshspy-client")
-	mqttUser   := getEnv("MQTT_USER", "testmeshspy")
-	mqttPass   := getEnv("MQTT_PASS", "test1")
+    mqttUser := getEnv("MQTT_USER", "")
+    mqttPass := getEnv("MQTT_PASS", "")
 
-    // Apri la porta seriale
-    cfg := &serial.Config{
-        Name:        serialPort,
-        Baud:        baudRate,
-        ReadTimeout: 5 * time.Second,
-    }
+    // setup serial
+    cfg := &serial.Config{Name: serialPort, Baud: baudRate, ReadTimeout: time.Second * 5}
     port, err := serial.OpenPort(cfg)
     if err != nil {
         log.Fatalf("Impossibile aprire %s: %v", serialPort, err)
     }
     defer port.Close()
 
-    // Connetti a MQTT
+    // setup MQTT
     opts := mqtt.NewClientOptions().
         AddBroker(mqttBroker).
         SetClientID(clientID)
-	if mqttUser != "" {
-		opts.SetUsername(mqttUser)
-		opts.SetPassword(mqttPass)
-	}
+    if mqttUser != "" {
+        opts.SetUsername(mqttUser)
+        opts.SetPassword(mqttPass)
+    }
     client := mqtt.NewClient(opts)
-    if token := client.Connect(); token.Wait() && token.Error() != nil {
-        log.Fatalf("Connessione MQTT fallita: %v", token.Error())
+    if tok := client.Connect(); tok.Wait() && tok.Error() != nil {
+        log.Fatalf("Connessione MQTT fallita: %v", tok.Error())
     }
     defer client.Disconnect(250)
 
     log.Printf("In ascolto su seriale %s a %d baud", serialPort, baudRate)
     reader := bufio.NewReader(port)
 
+    var lastNode string
+
     for {
-        // Leggi una linea dalla seriale
         line, err := reader.ReadString('\n')
         if err != nil {
+            if err == io.EOF {
+                continue
+            }
             log.Printf("Errore lettura seriale: %v", err)
-            time.Sleep(1 * time.Second)
+            time.Sleep(time.Second)
             continue
         }
 
-        nodeName := parseNodeName(line)
-        if nodeName == "" {
-            // riga non valida: ignora
+        node := parseNodeName(line)
+        // ignora righe senza ID, ID vuoto o "0x0"
+        if node == "" || node == "0x0" {
             continue
         }
+        // evita duplicati consecutivi
+        if node == lastNode {
+            continue
+        }
+        lastNode = node
 
-        // Crea il payload JSON
-        payload := fmt.Sprintf(`{"node":"%s","ts":%d}`, nodeName, time.Now().Unix())
-
-        // Pubblica su MQTT
-        token := client.Publish(mqttTopic, 0, false, payload)
-        token.Wait()
-        if token.Error() != nil {
-            log.Printf("Errore publish MQTT: %v", token.Error())
+        payload := fmt.Sprintf(`{"node":"%s","ts":%d}`, node, time.Now().Unix())
+        tok := client.Publish(mqttTopic, 0, false, payload)
+        tok.Wait()
+        if tok.Error() != nil {
+            log.Printf("Errore publish MQTT: %v", tok.Error())
         } else {
             log.Printf("Pubblicato su %s: %s", mqttTopic, payload)
         }
     }
 }
 
-// parseNodeName estrae il nome del nodo dalla linea letta.
-// Modifica il pattern secondo il formato effettivo dei dati.
 func parseNodeName(line string) string {
     m := nodeRe.FindStringSubmatch(line)
     if len(m) == 2 {
-        // es. m[1] = "0xbb210daf"
-        return m[1]
+        return m[1] // es. "0xbb210daf"
     }
     return ""
 }
 
-// getEnv restituisce il valore di KEY o def se non è settata
 func getEnv(key, def string) string {
     if v, ok := os.LookupEnv(key); ok {
         return v
@@ -102,7 +100,6 @@ func getEnv(key, def string) string {
     return def
 }
 
-// getEnvInt restituisce il valore numerico di KEY o def se non è settata o non valida
 func getEnvInt(key string, def int) int {
     if v, ok := os.LookupEnv(key); ok {
         var i int
