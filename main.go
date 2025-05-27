@@ -12,7 +12,8 @@ import (
     "github.com/tarm/serial"
     "google.golang.org/protobuf/proto"
 
-    pb "meshspy/pb/meshtastic"
+    pb "github.com/meshtastic/meshspy/pb/meshtastic"
+
 )
 
 func leggiVarintFrame(r io.Reader) ([]byte, error) {
