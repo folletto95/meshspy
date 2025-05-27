@@ -1,3 +1,4 @@
+// main.go
 package main
 
 import (
@@ -5,14 +6,15 @@ import (
     "fmt"
     "io"
     "log"
+    "os"
     "time"
 
     mqtt "github.com/eclipse/paho.mqtt.golang"
     "github.com/tarm/serial"
     "google.golang.org/protobuf/proto"
 
-    // i binding generati in pb/meshtastic
-    pb "github.com/nicbad/meshspy/pb/meshtastic"
+    // binding Go generati in pb/meshtastic
+    pb "meshspy/pb/meshtastic"
 )
 
 func leggiVarintFrame(r io.Reader) ([]byte, error) {
@@ -77,13 +79,11 @@ func main() {
             continue
         }
 
-        // Unmarshal ServiceEnvelope
         var env pb.ServiceEnvelope
         if err := proto.Unmarshal(frame, &env); err != nil {
             log.Printf("Unmarshal envelope: %v", err)
             continue
         }
-        // Unmarshal MeshPacket
         var pkt pb.MeshPacket
         if err := proto.Unmarshal(env.GetPayload(), &pkt); err != nil {
             log.Printf("Unmarshal packet: %v", err)

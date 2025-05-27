@@ -1,26 +1,15 @@
 #!/usr/bin/env bash
+# run.sh
 set -euo pipefail
+if [[ -f .env ]]; then source .env; fi
 
-# Carica configurazione da .env se presente
-if [[ -f .env ]]; then
-  # shellcheck disable=SC1091
-  source .env
-fi
-
-# Path della seriale e gruppo (override EVA)
 SERIAL_PORT=${SERIAL_PORT:-/dev/ttyACM0}
 SERIAL_GROUP=${SERIAL_GROUP:-dialout}
-
-# Ricava il GID
 GID=$(getent group "$SERIAL_GROUP" | cut -d: -f3)
 if [[ -z "$GID" ]]; then
   echo "❌ Gruppo '$SERIAL_GROUP' non trovato sul host"
   exit 1
 fi
-
-# Variabili MQTT (ereditate da .env o env esterni)
-IMAGE=${IMAGE:-nicbad/meshspy}
-TAG=${TAG:-latest}
 
 docker run -d \
   --platform linux/arm/v6 \
