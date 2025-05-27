@@ -15,9 +15,11 @@ func main() {
     // Leggi configurazione da variabili d'ambiente
     serialPort := getEnv("SERIAL_PORT", "/dev/ttyUSB0")
     baudRate := getEnvInt("BAUD_RATE", 115200)
-    mqttBroker := getEnv("MQTT_BROKER", "tcp://mqtt-broker:1883")
+    mqttBroker := getEnv("MQTT_BROKER", "tcp://smpisa.ddns.net:1883")
     mqttTopic := getEnv("MQTT_TOPIC", "meshspy/nodo/connesso")
     clientID := getEnv("MQTT_CLIENT_ID", "meshspy-client")
+	mqttUser   := getEnv("MQTT_USER", "testmeshspy")
+	mqttPass   := getEnv("MQTT_PASS", "test1")
 
     // Apri la porta seriale
     cfg := &serial.Config{
@@ -35,6 +37,10 @@ func main() {
     opts := mqtt.NewClientOptions().
         AddBroker(mqttBroker).
         SetClientID(clientID)
+	if mqttUser != "" {
+		opts.SetUsername(mqttUser)
+		opts.SetPassword(mqttPass)
+	}
     client := mqtt.NewClient(opts)
     if token := client.Connect(); token.Wait() && token.Error() != nil {
         log.Fatalf("Connessione MQTT fallita: %v", token.Error())
