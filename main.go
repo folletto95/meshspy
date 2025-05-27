@@ -11,7 +11,7 @@ import (
     "github.com/tarm/serial"
     "google.golang.org/protobuf/proto"
 
-    // binding Go generati in ./pb/meshtastic
+    // binding Go generati in pb/meshtastic
     pb "meshspy/pb/meshtastic"
 )
 
@@ -19,13 +19,12 @@ import (
 func leggiVarintFrame(r io.Reader) ([]byte, error) {
     var length uint64
     for shift := uint(0); ; shift += 7 {
-        buf := make([]byte, 1)
-        if _, err := r.Read(buf); err != nil {
+        var b [1]byte
+        if _, err := r.Read(b[:]); err != nil {
             return nil, err
         }
-        b := buf[0]
-        length |= uint64(b&0x7F) << shift
-        if b&0x80 == 0 {
+        length |= uint64(b[0]&0x7F) << shift
+        if b[0]&0x80 == 0 {
             break
         }
     }
@@ -45,6 +44,7 @@ func main() {
     mqttUser := getEnv("MQTT_USER", "")
     mqttPass := getEnv("MQTT_PASS", "")
 
+    // apri seriale
     cfg := &serial.Config{Name: serialPort, Baud: baudRate, ReadTimeout: time.Second * 5}
     port, err := serial.OpenPort(cfg)
     if err != nil {
@@ -52,6 +52,7 @@ func main() {
     }
     defer port.Close()
 
+    // connessione MQTT
     opts := mqtt.NewClientOptions().AddBroker(mqttBroker).SetClientID(clientID)
     if mqttUser != "" {
         opts.SetUsername(mqttUser)
