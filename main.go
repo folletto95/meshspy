@@ -15,6 +15,7 @@ import (
     pb "meshspy/pb/meshtastic"
 )
 
+// leggiVarintFrame legge la lunghezza varint + payload
 func leggiVarintFrame(r io.Reader) ([]byte, error) {
     var length uint64
     for shift := uint(0); ; shift += 7 {
