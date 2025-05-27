@@ -12,7 +12,7 @@ import (
     "github.com/tarm/serial"
     "google.golang.org/protobuf/proto"
 
-    pb "github.com/meshtastic/meshspy/pb/meshtastic"
+    pb "github.com/folletto95/meshspy/pb/meshtastic"
 
 )
 
