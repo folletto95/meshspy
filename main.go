@@ -11,10 +11,10 @@ import (
     "github.com/tarm/serial"
     "google.golang.org/protobuf/proto"
 
+    // i binding generati in pb/meshtastic
     pb "github.com/nicbad/meshspy/pb/meshtastic"
 )
 
-// leggiVarintFrame legge prefisso varint + payload
 func leggiVarintFrame(r io.Reader) ([]byte, error) {
     var length uint64
     for shift := uint(0); ; shift += 7 {
@@ -77,11 +77,13 @@ func main() {
             continue
         }
 
+        // Unmarshal ServiceEnvelope
         var env pb.ServiceEnvelope
         if err := proto.Unmarshal(frame, &env); err != nil {
             log.Printf("Unmarshal envelope: %v", err)
             continue
         }
+        // Unmarshal MeshPacket
         var pkt pb.MeshPacket
         if err := proto.Unmarshal(env.GetPayload(), &pkt); err != nil {
             log.Printf("Unmarshal packet: %v", err)
