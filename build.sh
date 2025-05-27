@@ -29,6 +29,10 @@ docker run --rm \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0 && \
     rm -rf protobufs pb && \
     git clone --depth 1 --branch ${PROTO_VERSION} https://github.com/meshtastic/protobufs.git protobufs && \
+    # Patch sui .proto per forzare il giusto go_package:
+    for f in protobufs/meshtastic/*.proto; do \
+      sed -i 's|option go_package = .*;|option go_package = \"meshspy/pb/meshtastic\";|' \"\$f\"; \
+    done && \
     mkdir -p pb/meshtastic && \
     protoc \
       --proto_path=protobufs \

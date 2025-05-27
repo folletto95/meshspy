@@ -4,7 +4,6 @@
 #############################################
 FROM golang:1.24-alpine AS builder
 
-# consentiamo passaggio GOOS/GOARCH/GOARM
 ARG GOOS=linux
 ARG GOARCH=amd64
 ARG GOARM=
@@ -18,7 +17,7 @@ RUN go mod download
 # 1.2 Copia tutto il codice (incl. pb/)
 COPY . .
 
-# 1.3 Assicura protobuf runtime e serial/MQTT
+# 1.3 Scarica runtime Protobuf e serial/MQTT
 RUN go get github.com/eclipse/paho.mqtt.golang@v1.5.0 \
            github.com/tarm/serial@latest \
            google.golang.org/protobuf@latest && \
@@ -39,7 +38,6 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /root/
 COPY --from=builder /app/meshspy .
 
-# utente non-root per sicurezza
 RUN addgroup -S mesh && adduser -S -G mesh mesh
 USER mesh
 

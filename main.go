@@ -15,7 +15,6 @@ import (
     pb "meshspy/pb/meshtastic"
 )
 
-// leggiVarintFrame legge un frame Protobuf con prefisso varint per la lunghezza
 func leggiVarintFrame(r io.Reader) ([]byte, error) {
     var length uint64
     for shift := uint(0); ; shift += 7 {
@@ -44,7 +43,6 @@ func main() {
     mqttUser := getEnv("MQTT_USER", "")
     mqttPass := getEnv("MQTT_PASS", "")
 
-    // apri seriale
     cfg := &serial.Config{Name: serialPort, Baud: baudRate, ReadTimeout: time.Second * 5}
     port, err := serial.OpenPort(cfg)
     if err != nil {
@@ -52,8 +50,9 @@ func main() {
     }
     defer port.Close()
 
-    // connessione MQTT
-    opts := mqtt.NewClientOptions().AddBroker(mqttBroker).SetClientID(clientID)
+    opts := mqtt.NewClientOptions().
+        AddBroker(mqttBroker).
+        SetClientID(clientID)
     if mqttUser != "" {
         opts.SetUsername(mqttUser)
         opts.SetPassword(mqttPass)
@@ -78,34 +77,31 @@ func main() {
             continue
         }
 
-        // 1) Unmarshal ServiceEnvelope (mqtt.proto)
+        // 1) Unmarshal ServiceEnvelope
         var env pb.ServiceEnvelope
         if err := proto.Unmarshal(frame, &env); err != nil {
             log.Printf("Unmarshal ServiceEnvelope: %v", err)
             continue
         }
-
-        // 2) Unmarshal MeshPacket (mesh.proto)
+        // 2) Unmarshal MeshPacket
         var pkt pb.MeshPacket
         if err := proto.Unmarshal(env.GetPayload(), &pkt); err != nil {
             log.Printf("Unmarshal MeshPacket: %v", err)
             continue
         }
 
-        // 3) Estrai ID e testo
         nodeID := fmt.Sprintf("0x%08x", pkt.GetFrom())
         text := ""
         if d := pkt.GetDecoded(); d != nil {
             text = d.GetText()
         }
 
-        // 4) Pubblica su MQTT
         payload := fmt.Sprintf(`{"node":"%s","ts":%d,"text":"%s"}`,
             nodeID, time.Now().Unix(), text)
         tok := client.Publish(mqttTopic, 0, false, payload)
         tok.Wait()
-        if tok.Error() != nil {
-            log.Printf("Errore publish MQTT: %v", tok.Error())
+        if err := tok.Error(); err != nil {
+            log.Printf("Errore publish MQTT: %v", err)
         } else {
             log.Printf("Pubblicato: %s", payload)
         }
