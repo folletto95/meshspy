@@ -12,36 +12,32 @@ ARG GOARM=
 
 WORKDIR /app
 
-# 1) Installa protoc, git e protoc-gen-go
+# 1) Installa protoc, git, protoc-gen-go
 RUN apk add --no-cache git protobuf protoc ca-certificates && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0
 
-# 2) Clona i proto Meshtastic e genera i binding in pb/meshtastic
+# 2) Clona e genera pb/meshtastic
 RUN git clone --depth 1 --branch "${PROTO_VERSION}" \
-      https://github.com/meshtastic/protobufs.git protobufs
-
-RUN mkdir -p pb/meshtastic && \
+      https://github.com/meshtastic/protobufs.git protobufs && \
+    mkdir -p pb/meshtastic && \
     for f in protobufs/meshtastic/*.proto; do \
       sed -e 's|option go_package = .*;|option go_package = "meshspy/pb/meshtastic";|' \
           "$f" > pb/meshtastic/"$(basename "$f")"; \
-    done
-
-RUN protoc \
+    done && \
+    protoc \
       --proto_path=protobufs \
       --go_out=pb/meshtastic --go_opt=paths=source_relative \
       protobufs/meshtastic/*.proto
 
-# 3) Inizializza il modulo **dopo** aver generato pb/
-RUN go mod init meshspy
-
-# 4) Copia main.go e scarica tutte le dipendenze esterne
+# 3) Copia il tuo main.go
 COPY main.go ./
-RUN go get github.com/eclipse/paho.mqtt.golang@v1.5.0 \
-           github.com/tarm/serial@latest \
-           google.golang.org/protobuf@latest && \
+
+# 4) Inizializza il modulo e lascia che go mod tidy rilevi
+#    sia gli import esterni sia il pkg locale in pb/meshtastic
+RUN go mod init meshspy && \
     go mod tidy
 
-# 5) Compila il binario statico per la piattaforma target
+# 5) Compila statico per il target
 RUN CGO_ENABLED=0 \
     GOOS=${GOOS} GOARCH=${GOARCH} \
     $( [ -n "${GOARM}" ] && echo "GOARM=${GOARM}" ) \
