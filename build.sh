@@ -115,15 +115,24 @@ for arch in "${ARCHS[@]}"; do
   TAG_ARCH="${IMAGE}:${TAG}-${arch}"
   echo " • Building $TAG_ARCH"
 
-  build_args=( --platform "linux/${GOARCH[$arch]}"
-              --no-cache --push -t "$TAG_ARCH"
-              --build-arg "GOOS=$GOOS"
-              --build-arg "GOARCH=${GOARCH[$arch]}" )
+  BASE_IMAGE="golang:1.21-bullseye"
+  [[ "$arch" == "armv6" ]] && BASE_IMAGE="arm32v6/golang:1.22.9-alpine"
 
+  build_args=(
+    --platform "linux/${GOARCH[$arch]}"
+    --no-cache --push
+    -t "$TAG_ARCH"
+    --build-arg "GOOS=$GOOS"
+    --build-arg "GOARCH=${GOARCH[$arch]}"
+    --build-arg "BASE_IMAGE=$BASE_IMAGE"
+  )
+
+  # Solo se serve GOARM (armv6/7)
   if [[ -n "${GOARM[$arch]:-}" ]]; then
-    build_args+=( --platform "linux/arm/v${GOARM[$arch]}" )
+    build_args[1]="--platform=linux/arm/v${GOARM[$arch]}"
     build_args+=( --build-arg "GOARM=${GOARM[$arch]}" )
   fi
+
   build_args+=( . )
   docker buildx build "${build_args[@]}"
 done
