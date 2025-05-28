@@ -1,9 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ -f .env ]]; then source .env; fi
+# Carica variabili da .env se presente
+if [[ -f .env ]]; then
+  # shellcheck disable=SC1091
+  source .env
+fi
 
+# Login automatico se configurato
+if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
+  echo "$DOCKER_PASSWORD" | docker login docker.io \
+    --username "$DOCKER_USERNAME" --password-stdin
+fi
+
+# Parametri (override in .env o CLI)
+IMAGE="${IMAGE:-nicbad/meshspy}"
+TAG="${TAG:-latest}"
+GOOS="linux"
 ARCHS=(amd64 386 armv6 armv7 arm64)
+
+# Se manca go.mod, lo generiamo con Go ≥1.24
+if [[ ! -f go.mod ]]; then
+  echo "🛠 Generating go.mod and go.sum…"
+  docker run --rm \
+    -v "${PWD}":/app -w /app \
+    golang:1.24-alpine sh -c "\
+      go mod init ${IMAGE#*/} && \
+      go get github.com/eclipse/paho.mqtt.golang@v1.5.0 github.com/tarm/serial@latest && \
+      go mod tidy"
+fi
+
+# Mappe per build-arg e manifest annotate
 declare -A GOARCH=( [amd64]=amd64 [386]=386 [armv6]=arm [armv7]=arm [arm64]=arm64 )
 declare -A GOARM=(  [armv6]=6     [armv7]=7                )
 declare -A MAN_OPTS=(
@@ -14,32 +41,44 @@ declare -A MAN_OPTS=(
   [arm64]="--os linux --arch arm64"
 )
 
-# optional Docker login
-if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
-  echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-fi
-
+echo "🛠 Building & pushing single-arch images for: ${ARCHS[*]}"
 for arch in "${ARCHS[@]}"; do
   TAG_ARCH="${IMAGE}:${TAG}-${arch}"
-  echo "🔨 Building $TAG_ARCH"
-  docker build --no-cache \
-    --build-arg PROTO_VERSION="$PROTO_VERSION" \
-    --build-arg GOOS=linux \
-    --build-arg GOARCH="${GOARCH[$arch]}" \
-    $( [[ -n "${GOARM[$arch]:-}" ]] && echo "--build-arg GOARM=${GOARM[$arch]}" ) \
-    -t "$TAG_ARCH" .
+  echo " • Building $TAG_ARCH"
+
+  # Build mono-arch
+  build_args=( --no-cache -t "$TAG_ARCH" )
+  build_args+=( --build-arg "GOOS=$GOOS" )
+  build_args+=( --build-arg "GOARCH=${GOARCH[$arch]}" )
+  if [[ -n "${GOARM[$arch]:-}" ]]; then
+    build_args+=( --build-arg "GOARM=${GOARM[$arch]}" )
+  fi
+  build_args+=( . )
+  docker build "${build_args[@]}"
+
+  # Push slice
+  echo " → Pushing $TAG_ARCH"
   docker push "$TAG_ARCH"
 done
 
-echo "📦 Creating & pushing manifest ${IMAGE}:${TAG}"
-docker manifest rm "${IMAGE}:${TAG}" 2>/dev/null || true
-margs=( manifest create "${IMAGE}:${TAG}" )
-for arch in "${ARCHS[@]}"; do margs+=( "${IMAGE}:${TAG}-${arch}" ); done
-docker "${margs[@]}"
+echo "📦 Preparing manifest ${IMAGE}:${TAG}"
+# Rimuove eventuale manifest esistente
+docker manifest rm "${IMAGE}:${TAG}" >/dev/null 2>&1 || true
+
+# Crea manifest multi-arch
+manifest_args=( manifest create "${IMAGE}:${TAG}" )
+for arch in "${ARCHS[@]}"; do
+  manifest_args+=( "${IMAGE}:${TAG}-${arch}" )
+done
+docker "${manifest_args[@]}"
+
+echo "⚙️ Annotating slices"
 for arch in "${ARCHS[@]}"; do
   docker manifest annotate "${IMAGE}:${TAG}" \
     "${IMAGE}:${TAG}-${arch}" ${MAN_OPTS[$arch]}
 done
+
+echo "🚀 Pushing multi-arch manifest ${IMAGE}:${TAG}"
 docker manifest push "${IMAGE}:${TAG}"
 
-echo "✅ Done — image available: ${IMAGE}:${TAG}"
+echo "✅ Done! Multi-arch image available: ${IMAGE}:${TAG}"
