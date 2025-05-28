@@ -43,9 +43,9 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   git clone --depth 1 --branch "$PROTO_VERSION" "$PROTO_REPO" "$TMP_DIR"
   mkdir -p "/tmp/proto-${PROTO_VERSION}-copy"
   cp -r "$TMP_DIR/meshtastic" "/tmp/proto-${PROTO_VERSION}-copy/"
-
-  # Scarica nanopb.proto una volta sola per ciascuna versione
-  curl -sSL https://raw.githubusercontent.com/nanopb/nanopb/master/generator/proto/nanopb.proto -o "/tmp/proto-${PROTO_VERSION}-copy/nanopb.proto"
+  # Scarica nanopb.proto nella directory temporanea
+  curl -sSL https://raw.githubusercontent.com/nanopb/nanopb/master/generator/proto/nanopb.proto \
+    -o "/tmp/proto-${PROTO_VERSION}-copy/nanopb.proto"
 
   echo "$PROTO_VERSION" >> "$PROTO_MAP_FILE"
   rm -rf "$TMP_DIR"
