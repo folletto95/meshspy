@@ -11,11 +11,13 @@ import (
 	"regexp"
 	"time"
 
+	// Qui importa TUTTE le versioni delle directory generate dai proto
+	// (esempio con v2.0.14 e v2.1.0, aggiungine altre seguendo questo schema)
+	m14 "meshspy/pb/meshtastic-v2.0.14/meshtastic"
+	m21 "meshspy/pb/meshtastic-v2.1.0/meshtastic"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/tarm/serial"
-
-	// Importa i messaggi protobuf che vuoi usare
-	m14 "meshspy/pb/meshtastic-v2.0.14/meshtastic" // Cambia path se serve
 )
 
 var downloadAllProtos func(string) error
@@ -44,6 +46,18 @@ func init() {
 }
 
 var nodeRe = regexp.MustCompile(`from=(0x[0-9a-fA-F]+)`)
+
+// Scegli quale proto usare in base alla versione firmware rilevata (qui esempio statico)
+func chooseProto(version string) interface{} {
+	switch version {
+	case "v2.0.14":
+		return &m14.DeviceInfo{}
+	case "v2.1.0":
+		return &m21.DeviceInfo{}
+	default:
+		return &m14.DeviceInfo{} // fallback a 2.0.14
+	}
+}
 
 func main() {
 	// Configurazione da env
@@ -107,12 +121,22 @@ func main() {
 		}
 		lastNode = node
 
-		// ESEMPIO: uso di proto
-		devInfo := &m14.DeviceInfo{
-			Id:   node,
-			Name: "auto",
+		// Qui dovresti avere una funzione per capire la versione firmware dal nodo.
+		// Per ora usiamo una variabile statica come esempio.
+		fwVersion := "v2.0.14"
+		devInfo := chooseProto(fwVersion)
+		// Popola i dati come necessario, esempio se DeviceInfo ha Id, Name...
+		switch d := devInfo.(type) {
+		case *m14.DeviceInfo:
+			d.Id = node
+			d.Name = "auto"
+		case *m21.DeviceInfo:
+			d.Id = node
+			d.Name = "auto"
 		}
-		payload := fmt.Sprintf(`{"node":"%s","ts":%d,"devinfo":%q}`, node, time.Now().Unix(), devInfo.String())
+
+		// Serializza la struttura (usa il metodo String o serializza in protobuf base64/json se serve)
+		payload := fmt.Sprintf(`{"node":"%s","ts":%d,"devinfo":%q}`, node, time.Now().Unix(), devInfo)
 		tok := client.Publish(mqttTopic, 0, false, payload)
 		tok.Wait()
 		if tok.Error() != nil {

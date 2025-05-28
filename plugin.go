@@ -15,6 +15,7 @@ import (
 	"strings"
 )
 
+// Struct per i tag delle release GitHub
 type Tag struct {
 	Name string `json:"name"`
 }
@@ -88,7 +89,6 @@ func filterTags(tags []string, min string) []string {
 	return out
 }
 
-// compareVer("v2.0.15", "v2.0.14") > 0
 func compareVer(a, b string) int {
 	av := strings.TrimPrefix(a, "v")
 	bv := strings.TrimPrefix(b, "v")
@@ -121,7 +121,6 @@ func downloadDir(owner, repo, dirPath, ref, localDir, githubToken string) error 
 		return err
 	}
 
-	// Assicura che la cartella locale esista
 	if err := os.MkdirAll(localDir, 0755); err != nil {
 		return err
 	}
