@@ -15,10 +15,9 @@ import (
     "github.com/tarm/serial"
 )
 
-var downloadFunc func(owner, repo, path, ref, out, token string) error
+var downloadAllProtos func(string) error
 
 func init() {
-    // Determina il percorso del .so rispetto all'eseguibile
     exePath, err := os.Executable()
     if err != nil {
         log.Fatalf("os.Executable fallito: %v", err)
@@ -26,19 +25,18 @@ func init() {
     exeDir := filepath.Dir(exePath)
     pluginPath := filepath.Join(exeDir, "ghdownloader.so")
 
-    // Carica il plugin
     p, err := plugin.Open(pluginPath)
     if err != nil {
         log.Fatalf("plugin.Open fallito: %v", err)
     }
-    sym, err := p.Lookup("DownloadProtos")
+    sym, err := p.Lookup("DownloadAllProtos")
     if err != nil {
-        log.Fatalf("Lookup DownloadProtos fallito: %v", err)
+        log.Fatalf("Lookup DownloadAllProtos fallito: %v", err)
     }
     var ok bool
-    downloadFunc, ok = sym.(func(string, string, string, string, string, string) error)
+    downloadAllProtos, ok = sym.(func(string) error)
     if !ok {
-        log.Fatalf("Firma di DownloadProtos non corrisponde")
+        log.Fatalf("Firma di DownloadAllProtos non corrisponde")
     }
 }
 
@@ -80,18 +78,11 @@ func main() {
     }
     defer client.Disconnect(250)
 
-    // **Scarica i .proto** all'avvio con il plugin
-    if err := downloadFunc(
-        "meshtastic",         // owner GitHub
-        "protobufs",          // repo
-        "meshtastic",         // path nella repo
-        "v2.0.14",            // tag/branch
-        "./meshtastic-proto", // cartella di destinazione
-        os.Getenv("GH_TOKEN"),// token opzionale
-    ); err != nil {
-        log.Printf("Errore in DownloadProtos: %v", err)
+    // **Scarica e builda TUTTI i .proto** all'avvio
+    if err := downloadAllProtos(os.Getenv("GH_TOKEN")); err != nil {
+        log.Printf("Errore in DownloadAllProtos: %v", err)
     } else {
-        log.Println("Plugin: download .proto completato")
+        log.Println("Plugin: download + build .proto completato")
     }
 
     log.Printf("In ascolto su seriale %s a %d baud", serialPort, baudRate)
