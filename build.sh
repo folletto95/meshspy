@@ -25,14 +25,20 @@ if ! command -v protoc &>/dev/null; then
   sudo apt update && sudo apt install -y protobuf-compiler
 fi
 
-# === STEP: Scarica e compila proto Meshtastic ===
-PROTO_VERSION="v2.0.14"
-PROTO_DIR="internal/proto/${PROTO_VERSION}"
+# === STEP: Scarica e compila proto Meshtastic per tutte le versioni disponibili ===
 PROTO_REPO="https://github.com/meshtastic/protobufs.git"
 TMP_DIR=".proto_tmp"
 
-if [[ ! -d "${PROTO_DIR}" ]]; then
-  echo "📥 Scaricando proto ${PROTO_VERSION}…"
+echo "📥 Recupero tag disponibili da $PROTO_REPO"
+git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
+  grep -E 'refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's|refs/tags/||' | sort -V | while read -r PROTO_VERSION; do
+  PROTO_DIR="internal/proto/${PROTO_VERSION}"
+  if [[ -d "${PROTO_DIR}" ]]; then
+    echo "✔️ Proto già presenti: $PROTO_DIR"
+    continue
+  fi
+
+  echo "📥 Scaricando proto $PROTO_VERSION…"
   rm -rf "$TMP_DIR"
   git clone --depth 1 --branch "$PROTO_VERSION" "$PROTO_REPO" "$TMP_DIR"
 
@@ -45,9 +51,7 @@ if [[ ! -d "${PROTO_DIR}" ]]; then
 
   cp "$TMP_DIR/meshtastic/"*.proto "$PROTO_DIR/"
   rm -rf "$TMP_DIR"
-else
-  echo "✔️ Proto già presenti: $PROTO_DIR"
-fi
+done
 
 # Se manca go.mod, lo generiamo con Go ≥1.24
 if [[ ! -f go.mod ]]; then
