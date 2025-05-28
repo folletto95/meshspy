@@ -19,6 +19,12 @@ TAG="${TAG:-latest}"
 GOOS="linux"
 ARCHS=(amd64 386 armv6 armv7 arm64)
 
+# === STEP: Check e install protoc se mancante ===
+if ! command -v protoc &>/dev/null; then
+  echo "🔧 'protoc' non trovato. Installazione in corso…"
+  sudo apt update && sudo apt install -y protobuf-compiler
+fi
+
 # === STEP: Scarica e compila proto Meshtastic ===
 PROTO_VERSION="v2.0.14"
 PROTO_DIR="internal/proto/${PROTO_VERSION}"
@@ -71,7 +77,7 @@ for arch in "${ARCHS[@]}"; do
   echo " • Building $TAG_ARCH"
 
   # Build mono-arch
-  build_args=( --no-cache -t "$TAG_ARCH" )
+  build_args=( --no-cache --platform "linux/${GOARCH[$arch]}" -t "$TAG_ARCH" )
   build_args+=( --build-arg "GOOS=$GOOS" )
   build_args+=( --build-arg "GOARCH=${GOARCH[$arch]}" )
   if [[ -n "${GOARM[$arch]:-}" ]]; then
