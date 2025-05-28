@@ -31,7 +31,12 @@ TMP_DIR=".proto_tmp"
 
 echo "📥 Recupero tag disponibili da $PROTO_REPO"
 git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
-  grep -E 'refs/tags/v(2\.(0\.(1[4-9]|[2-9][0-9])|[1-9][0-9]+)\.[0-9]+|[3-9][0-9]*\.[0-9]+\.[0-9]+)$' | sed 's|refs/tags/||' | sort -V | while read -r PROTO_VERSION; do
+  grep -E '^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's|refs/tags/||' | sort -V | while read -r PROTO_VERSION; do
+  # Confronto semantico: salta le versioni < v2.0.14
+  if [[ "$(printf '%s\n' "$PROTO_VERSION" v2.0.14 | sort -V | head -n1)" != "v2.0.14" ]]; then
+    echo "⏩ Salto $PROTO_VERSION (proto non standard)"
+    continue
+  fi
   PROTO_DIR="internal/proto/${PROTO_VERSION}"
   if [[ -d "${PROTO_DIR}" ]]; then
     echo "✔️ Proto già presenti: $PROTO_DIR"
