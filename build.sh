@@ -15,10 +15,9 @@ fi
 # Parametri
 IMAGE="${IMAGE:-nicbad/meshspy}"
 TAG="${TAG:-latest}"
-GOOS="linux"
 
-# 🔀 Ordine modificato: armv6 → armv7 → tutti gli altri
-ARCHS=(armv6 armv7 amd64 386 arm64)
+# Ordine di build: prima armv6 e armv7
+PLATFORMS="linux/arm/v6,linux/arm/v7,linux/amd64,linux/386,linux/arm64"
 
 PROTO_REPO="https://github.com/meshtastic/protobufs.git"
 TMP_DIR=".proto_tmp"
@@ -94,17 +93,6 @@ if [[ ! -f go.mod || "$REQUIRES_GO" != "1.21" ]]; then
       go mod tidy"
 fi
 
-# Build multipiattaforma
-declare -A GOARCH=( [armv6]=arm [armv7]=arm [arm64]=arm64 [amd64]=amd64 [386]=386 )
-declare -A GOARM=(  [armv6]=6     [armv7]=7 )
-declare -A MAN_OPTS=(
-    [armv6]="--os linux --arch arm --variant v6"
-  [armv7]="--os linux --arch arm --variant v7"
-  [arm64]="--os linux --arch arm64"
-  [amd64]="--os linux --arch amd64"
-  [386]="--os linux --arch 386"
-)
-
 # Setup buildx
 if ! docker buildx inspect meshspy-builder &>/dev/null; then
   docker buildx create --name meshspy-builder --use
@@ -112,53 +100,12 @@ fi
 docker buildx use meshspy-builder
 docker buildx inspect --bootstrap
 
-echo "🛠 Building & pushing single-arch images for: ${ARCHS[*]}"
-for arch in "${ARCHS[@]}"; do
-  TAG_ARCH="${IMAGE}:${TAG}-${arch}"
-  echo " • Building $TAG_ARCH"
+echo "🚀 Build & push multi-platform image for platforms: $PLATFORMS"
+docker buildx build \
+  --platform "$PLATFORMS" \
+  --push \
+  -t "${IMAGE}:${TAG}" \
+  --build-arg BASE_IMAGE=golang:1.21-bullseye \
+  .
 
-  BASE_IMAGE="golang:1.21-bullseye"
-  [[ "$arch" == "armv6" ]] && BASE_IMAGE="arm32v6/golang:1.22.9-alpine"
-
-  # Determina platform corretto
-  if [[ -n "${GOARM[$arch]:-}" ]]; then
-    PLATFORM="linux/arm/v${GOARM[$arch]}"
-  else
-    PLATFORM="linux/${GOARCH[$arch]}"
-  fi
-
-  build_args=(
-    --platform "$PLATFORM"
-    --no-cache --push
-    -t "$TAG_ARCH"
-    --build-arg "GOOS=$GOOS"
-    --build-arg "GOARCH=${GOARCH[$arch]}"
-    --build-arg "BASE_IMAGE=$BASE_IMAGE"
-  )
-
-  # Solo se serve GOARM
-  [[ -n "${GOARM[$arch]:-}" ]] && build_args+=( --build-arg "GOARM=${GOARM[$arch]}" )
-
-  build_args+=( . )
-  docker buildx build "${build_args[@]}"
-done
-
-echo "📦 Preparing manifest ${IMAGE}:${TAG}"
-docker manifest rm "${IMAGE}:${TAG}" >/dev/null 2>&1 || true
-
-manifest_args=( manifest create "${IMAGE}:${TAG}" )
-for arch in "${ARCHS[@]}"; do
-  manifest_args+=( "${IMAGE}:${TAG}-${arch}" )
-done
-docker "${manifest_args[@]}"
-
-echo "⚙️ Annotating slices"
-for arch in "${ARCHS[@]}"; do
-  docker manifest annotate "${IMAGE}:${TAG}" \
-    "${IMAGE}:${TAG}-${arch}" ${MAN_OPTS[$arch]}
-done
-
-echo "🚀 Pushing multi-arch manifest ${IMAGE}:${TAG}"
-docker manifest push "${IMAGE}:${TAG}"
-
-echo "✅ Done! Multi-arch image available: ${IMAGE}:${TAG}"
+echo "✅ Done! Multiarch image available at: ${IMAGE}:${TAG}"

@@ -4,9 +4,8 @@
 # 🔨 STAGE: Builder
 ###########################
 
-# Base immagine selezionata dinamicamente via --build-arg BASE_IMAGE
-ARG BASE_IMAGE=golang:1.21-bullseye
-FROM ${BASE_IMAGE} AS builder
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE:-golang:1.21-bullseye} AS builder
 
 ARG GOOS=linux
 ARG GOARCH=amd64
@@ -19,15 +18,12 @@ ENV CGO_ENABLED=0 \
 
 WORKDIR /app
 
-# Scarica i moduli Go
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 
-# Copia i sorgenti
 COPY . .
 
-# Compila il binario in modo statico e ottimizzato
 RUN go build -ldflags="-s -w" -o meshspy .
 
 ###########################
