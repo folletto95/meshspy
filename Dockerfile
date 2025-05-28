@@ -32,7 +32,8 @@ RUN CGO_ENABLED=0 \
     GOOS=${GOOS} \
     GOARCH=${GOARCH} \
     GOARM=${GOARM} \
-    go build -buildmode=plugin -trimpath -o ghdownloader.so ./ghdownloader
+    go build -buildmode=plugin -trimpath -o ghdownloader.so .
+
 
 #############################################
 # 2) Runtime minimal “scratch”              #
