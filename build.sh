@@ -113,10 +113,13 @@ for arch in "${ARCHS[@]}"; do
   TAG_ARCH="${IMAGE}:${TAG}-${arch}"
   echo " • Building $TAG_ARCH"
 
-  build_args=( --platform "linux/${GOARCH[$arch]}" --no-cache --push -t "$TAG_ARCH" )
-  build_args+=( --build-arg "GOOS=$GOOS" )
-  build_args+=( --build-arg "GOARCH=${GOARCH[$arch]}" )
+  build_args=( --platform "linux/${GOARCH[$arch]}"
+              --no-cache --push -t "$TAG_ARCH"
+              --build-arg "GOOS=$GOOS"
+              --build-arg "GOARCH=${GOARCH[$arch]}" )
+
   if [[ -n "${GOARM[$arch]:-}" ]]; then
+    build_args+=( --platform "linux/arm/v${GOARM[$arch]}" )
     build_args+=( --build-arg "GOARM=${GOARM[$arch]}" )
   fi
   build_args+=( . )
