@@ -43,7 +43,6 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   git clone --depth 1 --branch "$PROTO_VERSION" "$PROTO_REPO" "$TMP_DIR"
   mkdir -p "/tmp/proto-${PROTO_VERSION}-copy"
   cp -r "$TMP_DIR/meshtastic" "/tmp/proto-${PROTO_VERSION}-copy/"
-  # Scarica nanopb.proto nella directory temporanea
   curl -sSL https://raw.githubusercontent.com/nanopb/nanopb/master/generator/proto/nanopb.proto \
     -o "/tmp/proto-${PROTO_VERSION}-copy/nanopb.proto"
 
@@ -67,13 +66,16 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
       while read -r version; do
         rm -rf internal/proto/$version
         mkdir -p internal/proto/$version
-        protoc \
-          --experimental_allow_proto3_optional \
-          -I /tmp/proto-$version-copy \
-          --go_out=internal/proto/$version \
-          --go_opt=paths=source_relative \
-          /tmp/proto-$version-copy/meshtastic/*.proto \
-          /tmp/proto-$version-copy/nanopb.proto || true
+        for f in /tmp/proto-$version-copy/*.proto /tmp/proto-$version-copy/meshtastic/*.proto; do
+          [[ -f "$f" ]] || continue
+          protoc \
+            --experimental_allow_proto3_optional \
+            -I /tmp/proto-$version-copy \
+            --go_out=internal/proto/$version \
+            --go_opt=paths=source_relative \
+            --go_opt=Mnanopb.proto=github.com/nicbad/meshspy/internal/proto/$version \
+            "$f" || true
+        done
       done < '"$PROTO_MAP_FILE"'
     '
   rm -f "$PROTO_MAP_FILE"
