@@ -1,4 +1,3 @@
-# Dockerfile
 # syntax=docker/dockerfile:1.4
 
 #############################################
@@ -12,12 +11,29 @@ ARG GOARM=
 
 WORKDIR /app
 
-# Dipendenze base
+# Dipendenze Go
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copia tutto il sorgente (inclusi main.go, plugin.go, tutti i .pb.go, ecc)
+# Copia tutto il sorgente
 COPY . .
+
+# Installa protoc (protoc e plugin go)
+RUN apk add --no-cache git protobuf protoc gcc musl-dev
+
+# --- GENERA I .pb.go PER TUTTE LE VERSIONI DEI PROTOBUF --- #
+# (aggiungi qui un blocco RUN per ogni versione supportata)
+RUN mkdir -p pb/meshtastic-v2.0.14/meshtastic && \
+    protoc --proto_path=proto/v2.0.14/meshtastic \
+      --go_out=pb/meshtastic-v2.0.14/meshtastic \
+      proto/v2.0.14/meshtastic/*.proto
+
+RUN mkdir -p pb/meshtastic-v2.1.0/meshtastic && \
+    protoc --proto_path=proto/v2.1.0/meshtastic \
+      --go_out=pb/meshtastic-v2.1.0/meshtastic \
+      proto/v2.1.0/meshtastic/*.proto
+
+# --- (Aggiungi blocchi RUN per ogni nuova versione!) --- #
 
 # Compila il binario principale
 RUN CGO_ENABLED=0 \
@@ -26,20 +42,19 @@ RUN CGO_ENABLED=0 \
     GOARM=${GOARM} \
     go build -trimpath -o meshspy .
 
-# Compila il plugin (serve cgo abilitato, quindi installa toolchain C)
-RUN apk add --no-cache gcc musl-dev
+# Compila il plugin (cgo abilitato, per plugin Go)
 RUN CGO_ENABLED=1 \
     GOOS=${GOOS} \
     GOARCH=${GOARCH} \
     GOARM=${GOARM} \
-    go build -buildmode=plugin -trimpath -o ghdownloader.so plugin.go
+    go build -buildmode=plugin -trimpath -o ghdownloader.so ./plugin.go
 
 #############################################
 # 2) Runtime minimal “scratch”              #
 #############################################
 FROM scratch
 
-COPY --from=builder /app/meshspy      /meshspy
+COPY --from=builder /app/meshspy         /meshspy
 COPY --from=builder /app/ghdownloader.so /ghdownloader.so
 
 WORKDIR /
