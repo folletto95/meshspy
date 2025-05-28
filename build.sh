@@ -3,7 +3,6 @@ set -euo pipefail
 
 # Carica variabili da .env se presente
 if [[ -f .env ]]; then
-  # shellcheck disable=SC1091
   source .env
 fi
 
@@ -13,13 +12,12 @@ if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
     --username "$DOCKER_USERNAME" --password-stdin
 fi
 
-# Parametri (override in .env o CLI)
+# Parametri
 IMAGE="${IMAGE:-nicbad/meshspy}"
 TAG="${TAG:-latest}"
 GOOS="linux"
 ARCHS=(amd64 386 armv6 armv7 arm64)
 
-# === STEP: Scarica e compila proto Meshtastic ≥ v2.0.14 ===
 PROTO_REPO="https://github.com/meshtastic/protobufs.git"
 TMP_DIR=".proto_tmp"
 PROTO_MAP_FILE=".proto_compile_map.sh"
@@ -50,7 +48,7 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   rm -rf "$TMP_DIR"
 done
 
-# Compila tutti i proto raccolti in un unico container
+# Compilazione dei proto
 if [[ -s "$PROTO_MAP_FILE" ]]; then
   echo "📦 Compilazione .proto in un unico container…"
   docker run --rm \
@@ -81,7 +79,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
   rm -f "$PROTO_MAP_FILE"
 fi
 
-# Se manca o è incoerente go.mod, lo rigenera con Go ≥1.21
+# Verifica o rigenera go.mod
 REQUIRES_GO=$(grep '^go [0-9]\.' go.mod 2>/dev/null | cut -d' ' -f2 || echo "")
 if [[ ! -f go.mod || "$REQUIRES_GO" != "1.21" ]]; then
   echo "🛠 Generating or fixing go.mod and go.sum…"
@@ -90,13 +88,13 @@ if [[ ! -f go.mod || "$REQUIRES_GO" != "1.21" ]]; then
     -v "${PWD}":/app -w /app \
     golang:1.21-alpine sh -c "\
       go mod init ${IMAGE#*/} && \
-      go get github.com/eclipse/paho.mqtt.golang@v1.5.0 github.com/tarm/serial@latest && \
+      go get github.com/eclipse/paho.mqtt.golang@v1.5.0 github.com/tarm/serial@latest google.golang.org/protobuf@v1.30.0 && \
       go mod tidy"
 fi
 
-# Mappe per build-arg e manifest annotate
+# Build multipiattaforma
 declare -A GOARCH=( [amd64]=amd64 [386]=386 [armv6]=arm [armv7]=arm [arm64]=arm64 )
-declare -A GOARM=(  [armv6]=6     [armv7]=7                )
+declare -A GOARM=(  [armv6]=6     [armv7]=7 )
 declare -A MAN_OPTS=(
   [amd64]="--os linux --arch amd64"
   [386]="--os linux --arch 386"
@@ -105,7 +103,7 @@ declare -A MAN_OPTS=(
   [arm64]="--os linux --arch arm64"
 )
 
-# Assicura che buildx sia attivo
+# Setup buildx
 if ! docker buildx inspect meshspy-builder &>/dev/null; then
   docker buildx create --name meshspy-builder --use
 fi
