@@ -84,7 +84,7 @@ if [[ ! -f go.mod ]]; then
   echo "🛠 Generating go.mod and go.sum…"
   docker run --rm \
     -v "${PWD}":/app -w /app \
-    golang:1.24-alpine sh -c "\
+    golang:1.21-alpine sh -c "\
       go mod init ${IMAGE#*/} && \
       go get github.com/eclipse/paho.mqtt.golang@v1.5.0 github.com/tarm/serial@latest && \
       go mod tidy"
