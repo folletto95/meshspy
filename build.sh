@@ -61,7 +61,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
       set -e
       apt-get update
       apt-get install -y unzip curl protobuf-compiler
-      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.1
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0
       export PATH=$PATH:$(go env GOPATH)/bin
       while read -r version; do
         rm -rf internal/proto/$version
@@ -81,9 +81,11 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
   rm -f "$PROTO_MAP_FILE"
 fi
 
-# Se manca go.mod, lo generiamo con Go ≥1.21
-if [[ ! -f go.mod ]]; then
-  echo "🛠 Generating go.mod and go.sum…"
+# Se manca o è incoerente go.mod, lo rigenera con Go ≥1.21
+REQUIRES_GO=$(grep '^go [0-9]\.' go.mod 2>/dev/null | cut -d' ' -f2 || echo "")
+if [[ ! -f go.mod || "$REQUIRES_GO" != "1.21" ]]; then
+  echo "🛠 Generating or fixing go.mod and go.sum…"
+  rm -f go.mod go.sum
   docker run --rm \
     -v "${PWD}":/app -w /app \
     golang:1.21-alpine sh -c "\
