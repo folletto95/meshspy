@@ -1,5 +1,5 @@
 # Dockerfile
-FROM golang:1.24-bullseye AS builder
+FROM golang:1.21-bullseye AS builder
 
 # Installazione tool di sistema e protoc
 RUN apt-get update && apt-get install -y \

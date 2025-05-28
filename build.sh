@@ -58,7 +58,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
     -v "$PWD":/app \
     -v /tmp:/tmp \
     -w /app \
-    golang:1.24-bullseye bash -c '
+    golang:1.21-bullseye bash -c '
       set -e
       apt-get update
       apt-get install -y unzip curl protobuf-compiler
@@ -79,7 +79,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
   rm -f "$PROTO_MAP_FILE"
 fi
 
-# Se manca go.mod, lo generiamo con Go ≥1.24
+# Se manca go.mod, lo generiamo con Go ≥1.21
 if [[ ! -f go.mod ]]; then
   echo "🛠 Generating go.mod and go.sum…"
   docker run --rm \
