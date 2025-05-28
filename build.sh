@@ -41,7 +41,8 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   echo "📥 Scaricando proto $PROTO_VERSION…"
   rm -rf "$TMP_DIR"
   git clone --depth 1 --branch "$PROTO_VERSION" "$PROTO_REPO" "$TMP_DIR"
-  cp "$TMP_DIR/meshtastic/"*.proto /tmp/proto-${PROTO_VERSION}-copy/
+  mkdir -p "/tmp/proto-${PROTO_VERSION}-copy"
+  cp "$TMP_DIR/meshtastic/"*.proto "/tmp/proto-${PROTO_VERSION}-copy/"
   echo "$PROTO_VERSION" >> "$PROTO_MAP_FILE"
   rm -rf "$TMP_DIR"
 done
