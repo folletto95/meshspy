@@ -71,24 +71,27 @@ declare -A MAN_OPTS=(
   [arm64]="--os linux --arch arm64"
 )
 
+# Assicura che buildx sia attivo
+if ! docker buildx inspect meshspy-builder &>/dev/null; then
+  docker buildx create --name meshspy-builder --use
+fi
+docker buildx use meshspy-builder
+docker buildx inspect --bootstrap
+
 echo "🛠 Building & pushing single-arch images for: ${ARCHS[*]}"
 for arch in "${ARCHS[@]}"; do
   TAG_ARCH="${IMAGE}:${TAG}-${arch}"
   echo " • Building $TAG_ARCH"
 
   # Build mono-arch
-  build_args=( --no-cache --platform "linux/${GOARCH[$arch]}" -t "$TAG_ARCH" )
+  build_args=( --platform "linux/${GOARCH[$arch]}" --no-cache --push -t "$TAG_ARCH" )
   build_args+=( --build-arg "GOOS=$GOOS" )
   build_args+=( --build-arg "GOARCH=${GOARCH[$arch]}" )
   if [[ -n "${GOARM[$arch]:-}" ]]; then
     build_args+=( --build-arg "GOARM=${GOARM[$arch]}" )
   fi
   build_args+=( . )
-  docker build "${build_args[@]}"
-
-  # Push slice
-  echo " → Pushing $TAG_ARCH"
-  docker push "$TAG_ARCH"
+  docker buildx build "${build_args[@]}"
 done
 
 echo "📦 Preparing manifest ${IMAGE}:${TAG}"
