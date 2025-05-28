@@ -25,13 +25,13 @@ if ! command -v protoc &>/dev/null; then
   sudo apt update && sudo apt install -y protobuf-compiler
 fi
 
-# === STEP: Scarica e compila proto Meshtastic per tutte le versioni disponibili ===
+# === STEP: Scarica e compila proto Meshtastic ≥ v2.0.14 ===
 PROTO_REPO="https://github.com/meshtastic/protobufs.git"
 TMP_DIR=".proto_tmp"
 
 echo "📥 Recupero tag disponibili da $PROTO_REPO"
 git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
-  grep -E 'refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's|refs/tags/||' | sort -V | while read -r PROTO_VERSION; do
+  grep -E 'refs/tags/v([2-9]|[0-9]{2,})\.[0-9]+\.[0-9]+$' | sed 's|refs/tags/||' | sort -V | while read -r PROTO_VERSION; do
   PROTO_DIR="internal/proto/${PROTO_VERSION}"
   if [[ -d "${PROTO_DIR}" ]]; then
     echo "✔️ Proto già presenti: $PROTO_DIR"
