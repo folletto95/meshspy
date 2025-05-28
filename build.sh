@@ -32,7 +32,6 @@ TMP_DIR=".proto_tmp"
 echo "📥 Recupero tag disponibili da $PROTO_REPO"
 git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   grep -E '^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's|refs/tags/||' | sort -V | while read -r PROTO_VERSION; do
-  # Confronto semantico: salta le versioni < v2.0.14
   if [[ "$(printf '%s\n' "$PROTO_VERSION" v2.0.14 | sort -V | head -n1)" != "v2.0.14" ]]; then
     echo "⏩ Salto $PROTO_VERSION (proto non standard)"
     continue
@@ -58,6 +57,7 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
       go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
       export PATH=\$PATH:\$(go env GOPATH)/bin && \
       protoc \
+        --experimental_allow_proto3_optional \
         -I .proto_tmp \
         --go_out=internal/proto/${PROTO_VERSION} \
         --go_opt=paths=source_relative \
@@ -101,7 +101,6 @@ for arch in "${ARCHS[@]}"; do
   TAG_ARCH="${IMAGE}:${TAG}-${arch}"
   echo " • Building $TAG_ARCH"
 
-  # Build mono-arch
   build_args=( --platform "linux/${GOARCH[$arch]}" --no-cache --push -t "$TAG_ARCH" )
   build_args+=( --build-arg "GOOS=$GOOS" )
   build_args+=( --build-arg "GOARCH=${GOARCH[$arch]}" )
@@ -113,10 +112,8 @@ for arch in "${ARCHS[@]}"; do
 done
 
 echo "📦 Preparing manifest ${IMAGE}:${TAG}"
-# Rimuove eventuale manifest esistente
 docker manifest rm "${IMAGE}:${TAG}" >/dev/null 2>&1 || true
 
-# Crea manifest multi-arch
 manifest_args=( manifest create "${IMAGE}:${TAG}" )
 for arch in "${ARCHS[@]}"; do
   manifest_args+=( "${IMAGE}:${TAG}-${arch}" )
