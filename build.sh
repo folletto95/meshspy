@@ -52,7 +52,7 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   docker run --rm \
     -v "$PWD":/app \
     -w /app \
-    golang:1.21-bullseye bash -c "\
+    golang:1.24-bullseye bash -c "\
       apt-get update && \
       apt-get install -y unzip curl protobuf-compiler && \
       go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
@@ -62,7 +62,7 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
         --go_out=internal/proto/${PROTO_VERSION} \
         --go_opt=paths=source_relative \
         .proto_tmp/meshtastic/*.proto"
-        
+
   cp "$TMP_DIR/meshtastic/"*.proto "$PROTO_DIR/"
   rm -rf "$TMP_DIR"
 done
