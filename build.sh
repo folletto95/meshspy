@@ -62,7 +62,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
       set -e
       apt-get update
       apt-get install -y unzip curl protobuf-compiler
-      go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0
       export PATH=$PATH:$(go env GOPATH)/bin
       while read -r version; do
         rm -rf internal/proto/$version
