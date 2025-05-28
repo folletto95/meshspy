@@ -19,15 +19,11 @@ TAG="${TAG:-latest}"
 GOOS="linux"
 ARCHS=(amd64 386 armv6 armv7 arm64)
 
-# === STEP: Check e install protoc se mancante ===
-if ! command -v protoc &>/dev/null; then
-  echo "🔧 'protoc' non trovato. Installazione in corso…"
-  sudo apt update && sudo apt install -y protobuf-compiler
-fi
-
 # === STEP: Scarica e compila proto Meshtastic ≥ v2.0.14 ===
 PROTO_REPO="https://github.com/meshtastic/protobufs.git"
 TMP_DIR=".proto_tmp"
+PROTO_MAP_FILE=".proto_compile_map.sh"
+rm -f "$PROTO_MAP_FILE"
 
 echo "📥 Recupero tag disponibili da $PROTO_REPO"
 git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
@@ -45,27 +41,33 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   echo "📥 Scaricando proto $PROTO_VERSION…"
   rm -rf "$TMP_DIR"
   git clone --depth 1 --branch "$PROTO_VERSION" "$PROTO_REPO" "$TMP_DIR"
+  cp "$TMP_DIR/meshtastic/"*.proto /tmp/proto-${PROTO_VERSION}-copy/
+  echo "$PROTO_VERSION" >> "$PROTO_MAP_FILE"
+  rm -rf "$TMP_DIR"
+done
 
-  echo "📦 Compilazione .proto → Go: $PROTO_DIR"
-  mkdir -p "$PROTO_DIR"
+if [[ -s "$PROTO_MAP_FILE" ]]; then
+  echo "📦 Compilazione .proto in un unico container…"
   docker run --rm \
     -v "$PWD":/app \
+    -v /tmp:/tmp \
     -w /app \
-    golang:1.24-bullseye bash -c "\
+    golang:1.24-bullseye bash -c "
       apt-get update && \
       apt-get install -y unzip curl protobuf-compiler && \
       go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
       export PATH=\$PATH:\$(go env GOPATH)/bin && \
-      protoc \
-        --experimental_allow_proto3_optional \
-        -I .proto_tmp \
-        --go_out=internal/proto/${PROTO_VERSION} \
-        --go_opt=paths=source_relative \
-        .proto_tmp/meshtastic/*.proto"
-
-  cp "$TMP_DIR/meshtastic/"*.proto "$PROTO_DIR/"
-  rm -rf "$TMP_DIR"
-done
+      while read -r version; do
+        mkdir -p internal/proto/\$version
+        protoc \
+          --experimental_allow_proto3_optional \
+          -I /tmp/proto-\$version-copy \
+          --go_out=internal/proto/\$version \
+          --go_opt=paths=source_relative \
+          /tmp/proto-\$version-copy/*.proto
+      done < $PROTO_MAP_FILE"
+  rm -f "$PROTO_MAP_FILE"
+fi
 
 # Se manca go.mod, lo generiamo con Go ≥1.24
 if [[ ! -f go.mod ]]; then
