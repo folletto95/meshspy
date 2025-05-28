@@ -93,14 +93,14 @@ if [[ ! -f go.mod || "$REQUIRES_GO" != "1.21" ]]; then
 fi
 
 # Build multipiattaforma
-declare -A GOARCH=( [amd64]=amd64 [386]=386 [armv6]=arm [armv7]=arm [arm64]=arm64 )
+declare -A GOARCH=( [armv6]=arm [armv7]=arm [arm64]=arm64 [amd64]=amd64 [386]=386 )
 declare -A GOARM=(  [armv6]=6     [armv7]=7 )
 declare -A MAN_OPTS=(
-  [amd64]="--os linux --arch amd64"
-  [386]="--os linux --arch 386"
-  [armv6]="--os linux --arch arm --variant v6"
+    [armv6]="--os linux --arch arm --variant v6"
   [armv7]="--os linux --arch arm --variant v7"
   [arm64]="--os linux --arch arm64"
+  [amd64]="--os linux --arch amd64"
+  [386]="--os linux --arch 386"
 )
 
 # Setup buildx
