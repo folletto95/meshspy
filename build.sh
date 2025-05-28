@@ -52,20 +52,22 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
     -v "$PWD":/app \
     -v /tmp:/tmp \
     -w /app \
-    golang:1.24-bullseye bash -c "
-      apt-get update && \
-      apt-get install -y unzip curl protobuf-compiler && \
-      go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
-      export PATH=\$PATH:\$(go env GOPATH)/bin && \
+    golang:1.24-bullseye bash -c '
+      set -e
+      apt-get update
+      apt-get install -y unzip curl protobuf-compiler
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+      export PATH=$PATH:$(go env GOPATH)/bin
       while read -r version; do
-        mkdir -p internal/proto/\$version
+        mkdir -p internal/proto/$version
         protoc \
           --experimental_allow_proto3_optional \
-          -I /tmp/proto-\$version-copy \
-          --go_out=internal/proto/\$version \
+          -I /tmp/proto-$version-copy \
+          --go_out=internal/proto/$version \
           --go_opt=paths=source_relative \
-          /tmp/proto-\$version-copy/*.proto
-      done < $PROTO_MAP_FILE"
+          /tmp/proto-$version-copy/*.proto
+      done < '"$PROTO_MAP_FILE"'
+    '
   rm -f "$PROTO_MAP_FILE"
 fi
 
