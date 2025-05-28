@@ -7,6 +7,15 @@ if [[ -f .env ]]; then
   source .env
 fi
 
+# Check for protoc-gen-go
+if ! command -v protoc-gen-go &>/dev/null; then
+  echo "🔧 'protoc-gen-go' non trovato. Installazione in corso…"
+  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+
+  # Aggiungi temporaneamente al PATH (valido per questo script)
+  export PATH="$PATH:$(go env GOPATH)/bin"
+fi
+
 # Login automatico se configurato
 if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
   echo "$DOCKER_PASSWORD" | docker login docker.io \
