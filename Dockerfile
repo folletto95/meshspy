@@ -28,7 +28,8 @@ RUN CGO_ENABLED=0 \
     go build -trimpath -o meshspy .
 
 # Compila il plugin (per lo stesso GOOS/GOARCH/GOARM)
-RUN CGO_ENABLED=0 \
+RUN apk add --no-cache gcc musl-dev  # Serve per cgo
+RUN CGO_ENABLED=1 \
     GOOS=${GOOS} \
     GOARCH=${GOARCH} \
     GOARM=${GOARM} \
