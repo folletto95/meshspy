@@ -1,1 +1,6 @@
 Working/
+OLD_proto/
+
+.env
+.git
+.gitignore

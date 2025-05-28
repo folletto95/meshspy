@@ -6,6 +6,8 @@ import (
     "io"
     "log"
     "os"
+    "path/filepath"
+    "plugin"
     "regexp"
     "time"
 
@@ -13,10 +15,37 @@ import (
     "github.com/tarm/serial"
 )
 
-// regex per catturare l'ID dopo "from="
+var downloadFunc func(owner, repo, path, ref, out, token string) error
+
+func init() {
+    // Determina il percorso del .so rispetto all'eseguibile
+    exePath, err := os.Executable()
+    if err != nil {
+        log.Fatalf("os.Executable fallito: %v", err)
+    }
+    exeDir := filepath.Dir(exePath)
+    pluginPath := filepath.Join(exeDir, "ghdownloader.so")
+
+    // Carica il plugin
+    p, err := plugin.Open(pluginPath)
+    if err != nil {
+        log.Fatalf("plugin.Open fallito: %v", err)
+    }
+    sym, err := p.Lookup("DownloadProtos")
+    if err != nil {
+        log.Fatalf("Lookup DownloadProtos fallito: %v", err)
+    }
+    var ok bool
+    downloadFunc, ok = sym.(func(string, string, string, string, string, string) error)
+    if !ok {
+        log.Fatalf("Firma di DownloadProtos non corrisponde")
+    }
+}
+
 var nodeRe = regexp.MustCompile(`from=(0x[0-9a-fA-F]+)`)
 
 func main() {
+    // Configurazione da env
     serialPort := getEnv("SERIAL_PORT", "/dev/ttyUSB0")
     baudRate := getEnvInt("BAUD_RATE", 115200)
     mqttBroker := getEnv("MQTT_BROKER", "tcp://mqtt-broker:1883")
@@ -25,15 +54,19 @@ func main() {
     mqttUser := getEnv("MQTT_USER", "")
     mqttPass := getEnv("MQTT_PASS", "")
 
-    // setup serial
-    cfg := &serial.Config{Name: serialPort, Baud: baudRate, ReadTimeout: time.Second * 5}
+    // Setup seriale
+    cfg := &serial.Config{
+        Name:        serialPort,
+        Baud:        baudRate,
+        ReadTimeout: 5 * time.Second,
+    }
     port, err := serial.OpenPort(cfg)
     if err != nil {
         log.Fatalf("Impossibile aprire %s: %v", serialPort, err)
     }
     defer port.Close()
 
-    // setup MQTT
+    // Setup MQTT
     opts := mqtt.NewClientOptions().
         AddBroker(mqttBroker).
         SetClientID(clientID)
@@ -47,9 +80,22 @@ func main() {
     }
     defer client.Disconnect(250)
 
+    // **Scarica i .proto** all'avvio con il plugin
+    if err := downloadFunc(
+        "meshtastic",         // owner GitHub
+        "protobufs",          // repo
+        "meshtastic",         // path nella repo
+        "v2.0.14",            // tag/branch
+        "./meshtastic-proto", // cartella di destinazione
+        os.Getenv("GH_TOKEN"),// token opzionale
+    ); err != nil {
+        log.Printf("Errore in DownloadProtos: %v", err)
+    } else {
+        log.Println("Plugin: download .proto completato")
+    }
+
     log.Printf("In ascolto su seriale %s a %d baud", serialPort, baudRate)
     reader := bufio.NewReader(port)
-
     var lastNode string
 
     for {
@@ -64,12 +110,7 @@ func main() {
         }
 
         node := parseNodeName(line)
-        // ignora righe senza ID, ID vuoto o "0x0"
-        if node == "" || node == "0x0" {
-            continue
-        }
-        // evita duplicati consecutivi
-        if node == lastNode {
+        if node == "" || node == "0x0" || node == lastNode {
             continue
         }
         lastNode = node
@@ -88,7 +129,7 @@ func main() {
 func parseNodeName(line string) string {
     m := nodeRe.FindStringSubmatch(line)
     if len(m) == 2 {
-        return m[1] // es. "0xbb210daf"
+        return m[1]
     }
     return ""
 }
