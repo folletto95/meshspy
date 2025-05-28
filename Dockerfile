@@ -1,32 +1,36 @@
-# Stage 1: Build
-FROM golang:1.24-alpine AS builder
+# Dockerfile
+FROM golang:1.24-bullseye AS builder
 
-# Imposta variabili di ambiente per Go build
-ARG GOOS
-ARG GOARCH
-ARG GOARM
-ENV GOOS=${GOOS}
-ENV GOARCH=${GOARCH}
-ENV GOARM=${GOARM}
-ENV CGO_ENABLED=0
+# Installazione tool di sistema e protoc
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    protobuf-compiler \
+    zlib1g-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installazione plugin protoc-gen-go
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 WORKDIR /app
 
-# Copia file di configurazione mod
-COPY go.mod go.sum ./
-RUN go mod download
-
-# Copia il codice sorgente
+# Copia del codice sorgente
 COPY . .
 
-# Build binario (con supporto a GOARM se definito)
-RUN if [ -n "${GOARM}" ]; then \
-      go build -o meshspy; \
-    else \
-      go build -o meshspy; \
-    fi
+# Compilazione Go (se serve)
+RUN go build -o meshspy .
 
-# Stage 2: Runtime
-FROM alpine:3.19
-COPY --from=builder /app/meshspy /meshspy
-ENTRYPOINT ["/meshspy"]
+# Costruzione immagine finale minimale
+FROM debian:bullseye-slim
+
+# Dipendenze runtime
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /root/
+
+# Copia del binario compilato
+COPY --from=builder /app/meshspy .
+COPY --from=builder /app/internal/proto /app/internal/proto
+
+CMD ["./meshspy"]
