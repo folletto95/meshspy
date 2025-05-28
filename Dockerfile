@@ -4,6 +4,7 @@ FROM golang:1.21-bullseye AS builder
 # Installazione tool di sistema e protoc
 RUN apt-get update && apt-get install -y \
     curl \
+    git \
     unzip \
     protobuf-compiler \
     zlib1g-dev \
