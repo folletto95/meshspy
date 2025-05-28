@@ -71,7 +71,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
             -I /tmp/proto-$version-copy \
             --go_out=internal/proto/$version \
             --go_opt=paths=source_relative \
-            --go_opt=Mnanopb.proto=github.com/nicbad/meshspy/internal/proto/$version \
+            --go_opt=Mnanopb.proto=meshspy/internal/proto/$version \
             "$f" || true
         done
       done < '"$PROTO_MAP_FILE"'
