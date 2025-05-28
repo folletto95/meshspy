@@ -7,15 +7,6 @@ if [[ -f .env ]]; then
   source .env
 fi
 
-# Check for protoc-gen-go
-if ! command -v protoc-gen-go &>/dev/null; then
-  echo "🔧 'protoc-gen-go' non trovato. Installazione in corso…"
-  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-
-  # Aggiungi temporaneamente al PATH (valido per questo script)
-  export PATH="$PATH:$(go env GOPATH)/bin"
-fi
-
 # Login automatico se configurato
 if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
   echo "$DOCKER_PASSWORD" | docker login docker.io \
@@ -58,12 +49,20 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
 
   echo "📦 Compilazione .proto → Go: $PROTO_DIR"
   mkdir -p "$PROTO_DIR"
-  protoc \
-    -I "$TMP_DIR" \
-    --go_out="$PROTO_DIR" \
-    --go_opt=paths=source_relative \
-    "$TMP_DIR/meshtastic/"*.proto
-
+  docker run --rm \
+    -v "$PWD":/app \
+    -w /app \
+    golang:1.21-bullseye bash -c "\
+      apt-get update && \
+      apt-get install -y unzip curl protobuf-compiler && \
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+      export PATH=\$PATH:\$(go env GOPATH)/bin && \
+      protoc \
+        -I .proto_tmp \
+        --go_out=internal/proto/${PROTO_VERSION} \
+        --go_opt=paths=source_relative \
+        .proto_tmp/meshtastic/*.proto"
+        
   cp "$TMP_DIR/meshtastic/"*.proto "$PROTO_DIR/"
   rm -rf "$TMP_DIR"
 done
