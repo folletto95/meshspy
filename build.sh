@@ -47,6 +47,7 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   rm -rf "$TMP_DIR"
 done
 
+# Compila tutti i proto raccolti in un unico container
 if [[ -s "$PROTO_MAP_FILE" ]]; then
   echo "📦 Compilazione .proto in un unico container…"
   docker run --rm \
