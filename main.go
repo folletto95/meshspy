@@ -11,15 +11,16 @@ import (
 	"regexp"
 	"time"
 
-	// Qui importa TUTTE le versioni delle directory generate dai proto
-	// (esempio con v2.0.14 e v2.1.0, aggiungine altre seguendo questo schema)
+	// Import TUTTE le versioni proto, aggiorna qui quando ne aggiungi
 	m14 "meshspy/pb/meshtastic-v2.0.14/meshtastic"
 	m21 "meshspy/pb/meshtastic-v2.1.0/meshtastic"
+	// Esempio: m22 "meshspy/pb/meshtastic-v2.2.0/meshtastic"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/tarm/serial"
 )
 
+// Firma della funzione che il plugin deve esportare
 var downloadAllProtos func(string) error
 
 func init() {
@@ -45,22 +46,25 @@ func init() {
 	}
 }
 
+// Regexp di parsing linea seriale
 var nodeRe = regexp.MustCompile(`from=(0x[0-9a-fA-F]+)`)
 
-// Scegli quale proto usare in base alla versione firmware rilevata (qui esempio statico)
+// Mappa la versione firmware a un tipo proto
 func chooseProto(version string) interface{} {
 	switch version {
 	case "v2.0.14":
 		return &m14.DeviceInfo{}
 	case "v2.1.0":
 		return &m21.DeviceInfo{}
+	// case "v2.2.0":
+	// 	return &m22.DeviceInfo{}
 	default:
 		return &m14.DeviceInfo{} // fallback a 2.0.14
 	}
 }
 
 func main() {
-	// Configurazione da env
+	// Config da variabili d'ambiente
 	serialPort := getEnv("SERIAL_PORT", "/dev/ttyUSB0")
 	baudRate := getEnvInt("BAUD_RATE", 115200)
 	mqttBroker := getEnv("MQTT_BROKER", "tcp://mqtt-broker:1883")
@@ -69,6 +73,7 @@ func main() {
 	mqttUser := getEnv("MQTT_USER", "")
 	mqttPass := getEnv("MQTT_PASS", "")
 
+	// Apro seriale
 	cfg := &serial.Config{
 		Name:        serialPort,
 		Baud:        baudRate,
@@ -80,6 +85,7 @@ func main() {
 	}
 	defer port.Close()
 
+	// Setup MQTT
 	opts := mqtt.NewClientOptions().
 		AddBroker(mqttBroker).
 		SetClientID(clientID)
@@ -93,7 +99,7 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
-	// **Scarica e builda TUTTI i .proto** all'avvio
+	// Scarica/compila TUTTI i proto disponibili
 	if err := downloadAllProtos(os.Getenv("GH_TOKEN")); err != nil {
 		log.Printf("Errore in DownloadAllProtos: %v", err)
 	} else {
@@ -121,11 +127,9 @@ func main() {
 		}
 		lastNode = node
 
-		// Qui dovresti avere una funzione per capire la versione firmware dal nodo.
-		// Per ora usiamo una variabile statica come esempio.
-		fwVersion := "v2.0.14"
+		// Qui devi implementare l'autodetect della versione del nodo
+		fwVersion := "v2.0.14" // <-- TODO: Cambia con autodetect
 		devInfo := chooseProto(fwVersion)
-		// Popola i dati come necessario, esempio se DeviceInfo ha Id, Name...
 		switch d := devInfo.(type) {
 		case *m14.DeviceInfo:
 			d.Id = node
@@ -133,9 +137,11 @@ func main() {
 		case *m21.DeviceInfo:
 			d.Id = node
 			d.Name = "auto"
+			// case *m22.DeviceInfo:
+			//     d.Id = node
+			//     d.Name = "auto"
 		}
 
-		// Serializza la struttura (usa il metodo String o serializza in protobuf base64/json se serve)
 		payload := fmt.Sprintf(`{"node":"%s","ts":%d,"devinfo":%q}`, node, time.Now().Unix(), devInfo)
 		tok := client.Publish(mqttTopic, 0, false, payload)
 		tok.Wait()
