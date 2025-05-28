@@ -19,6 +19,30 @@ TAG="${TAG:-latest}"
 GOOS="linux"
 ARCHS=(amd64 386 armv6 armv7 arm64)
 
+# === STEP: Scarica e compila proto Meshtastic ===
+PROTO_VERSION="v2.0.14"
+PROTO_DIR="internal/proto/${PROTO_VERSION}"
+PROTO_REPO="https://github.com/meshtastic/protobufs.git"
+TMP_DIR=".proto_tmp"
+
+if [[ ! -d "${PROTO_DIR}" ]]; then
+  echo "📥 Scaricando proto ${PROTO_VERSION}…"
+  rm -rf "$TMP_DIR"
+  git clone --depth 1 --branch "$PROTO_VERSION" "$PROTO_REPO" "$TMP_DIR"
+
+  echo "📦 Compilazione .proto → Go: $PROTO_DIR"
+  mkdir -p "$PROTO_DIR"
+  protoc \
+    --go_out="$PROTO_DIR" \
+    --go_opt=paths=source_relative \
+    "$TMP_DIR/meshtastic/"*.proto
+
+  cp "$TMP_DIR/meshtastic/"*.proto "$PROTO_DIR/"
+  rm -rf "$TMP_DIR"
+else
+  echo "✔️ Proto già presenti: $PROTO_DIR"
+fi
+
 # Se manca go.mod, lo generiamo con Go ≥1.24
 if [[ ! -f go.mod ]]; then
   echo "🛠 Generating go.mod and go.sum…"
