@@ -60,13 +60,14 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
       go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
       export PATH=$PATH:$(go env GOPATH)/bin
       while read -r version; do
+        rm -rf internal/proto/$version
         mkdir -p internal/proto/$version
         protoc \
           --experimental_allow_proto3_optional \
           -I /tmp/proto-$version-copy \
           --go_out=internal/proto/$version \
           --go_opt=paths=source_relative \
-          /tmp/proto-$version-copy/*.proto
+          /tmp/proto-$version-copy/meshtastic/*.proto
       done < '"$PROTO_MAP_FILE"'
     '
   rm -f "$PROTO_MAP_FILE"
