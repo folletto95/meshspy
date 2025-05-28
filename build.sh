@@ -50,6 +50,7 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   echo "📦 Compilazione .proto → Go: $PROTO_DIR"
   mkdir -p "$PROTO_DIR"
   protoc \
+    -I "$TMP_DIR" \
     --go_out="$PROTO_DIR" \
     --go_opt=paths=source_relative \
     "$TMP_DIR/meshtastic/"*.proto
