@@ -16,7 +16,9 @@ fi
 IMAGE="${IMAGE:-nicbad/meshspy}"
 TAG="${TAG:-latest}"
 GOOS="linux"
-ARCHS=(amd64 386 armv6 armv7 arm64)
+
+# 🔀 Ordine modificato: armv6 → armv7 → tutti gli altri
+ARCHS=(armv6 armv7 amd64 386 arm64)
 
 PROTO_REPO="https://github.com/meshtastic/protobufs.git"
 TMP_DIR=".proto_tmp"
@@ -127,7 +129,6 @@ for arch in "${ARCHS[@]}"; do
     --build-arg "BASE_IMAGE=$BASE_IMAGE"
   )
 
-  # Solo se serve GOARM (armv6/7)
   if [[ -n "${GOARM[$arch]:-}" ]]; then
     build_args[1]="--platform=linux/arm/v${GOARM[$arch]}"
     build_args+=( --build-arg "GOARM=${GOARM[$arch]}" )
