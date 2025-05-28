@@ -1,205 +1,200 @@
-// ghdownloader/plugin.go
+// plugin.go
 package main
 
 import (
-    "encoding/json"
-    "fmt"
-    "io"
-    "log"
-    "net/http"
-    "os"
-    "os/exec"
-    "path/filepath"
-    "regexp"
-    "sort"
-    "strconv"
-    "strings"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
 )
 
-// Content mappa la risposta GitHub API
-type Content struct {
-    Name        string `json:"name"`
-    Path        string `json:"path"`
-    Type        string `json:"type"`         // "file" o "dir"
-    DownloadURL string `json:"download_url"` // solo per file
-}
-
 type Tag struct {
-    Name string `json:"name"`
+	Name string `json:"name"`
 }
 
-// ===== ESPORTATA =====
-// Chiama questa dal main:
-//    DownloadAllProtos(token string)
-// Scarica TUTTE le versioni >= v2.0.14 e genera i binding Go
-func DownloadAllProtos(token string) error {
-    owner := "meshtastic"
-    repo := "protobufs"
-    repoPath := "meshtastic"
-    minTag := "v2.0.14"
-    protoBase := "./meshtastic-proto"
-    pbBase := "./pb"
-
-    tags, err := getTags(owner, repo, minTag, token)
-    if err != nil {
-        return err
-    }
-    log.Printf("➡️  Trovati tag: %v", tags)
-    for _, tag := range tags {
-        protoOut := filepath.Join(protoBase, tag, repoPath)
-        pbOut := filepath.Join(pbBase, tag, repoPath)
-        log.Printf("⬇️  [%s] Scarico proto...", tag)
-        if err := downloadDir(token, owner, repo, repoPath, tag, protoOut); err != nil {
-            log.Printf("❌ [%s] Errore download: %v", tag, err)
-            continue
-        }
-        log.Printf("✔️  [%s] Proto scaricati in %s", tag, protoOut)
-        if err := os.MkdirAll(pbOut, 0755); err != nil {
-            log.Printf("❌ [%s] Errore mkdir: %v", tag, err)
-            continue
-        }
-        protoFiles, _ := filepath.Glob(filepath.Join(protoOut, "*.proto"))
-        if len(protoFiles) == 0 {
-            log.Printf("⚠️  [%s] Nessun .proto trovato in %s", tag, protoOut)
-            continue
-        }
-        log.Printf("🛠️  [%s] Compilo .pb.go...", tag)
-        args := []string{
-            "--go_out=" + pbOut,
-            "--go_opt=paths=source_relative",
-            "--proto_path=" + protoOut,
-        }
-        args = append(args, protoFiles...)
-        cmd := exec.Command("protoc", args...)
-        cmd.Stdout = os.Stdout
-        cmd.Stderr = os.Stderr
-        if err := cmd.Run(); err != nil {
-            log.Printf("❌ [%s] Errore protoc: %v", tag, err)
-        } else {
-            log.Printf("✅ [%s] Binding Go generati in %s", tag, pbOut)
-        }
-    }
-    return nil
+type Content struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Type        string `json:"type"` // "file" o "dir"
+	DownloadURL string `json:"download_url"` // solo per file
 }
 
-// ====== GESTIONE TAG GITHUB API ======
+var versionRe = regexp.MustCompile(`^v(\d+\.\d+\.\d+)$`)
 
-func getTags(owner, repo, minTag, token string) ([]string, error) {
-    apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/tags", owner, repo)
-    req, err := http.NewRequest("GET", apiURL, nil)
-    if err != nil {
-        return nil, err
-    }
-    if token != "" {
-        req.Header.Set("Authorization", "token "+token)
-    }
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-    if resp.StatusCode != 200 {
-        body, _ := io.ReadAll(resp.Body)
-        return nil, fmt.Errorf("GitHub API tags error %d: %s", resp.StatusCode, body)
-    }
-    var tags []Tag
-    if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
-        return nil, err
-    }
-    // Filtra >= minTag (es: v2.0.14)
-    min := parseVer(minTag)
-    var out []string
-    for _, t := range tags {
-        if strings.HasPrefix(t.Name, "v") && compareVer(parseVer(t.Name), min) >= 0 {
-            out = append(out, t.Name)
-        }
-    }
-    // Ordina (crescente)
-    sort.Slice(out, func(i, j int) bool { return compareVer(parseVer(out[i]), parseVer(out[j])) < 0 })
-    return out, nil
+// Scarica tutti i .proto da tutte le versioni >= v2.0.14 e compila in .pb.go
+func DownloadAllProtos(githubToken string) error {
+	owner := "meshtastic"
+	repo := "protobufs"
+	basePath := "meshtastic"
+
+	tags, err := listTags(owner, repo, githubToken)
+	if err != nil {
+		return fmt.Errorf("listTags: %w", err)
+	}
+	filtered := filterTags(tags, "v2.0.14")
+	fmt.Printf("Trovati %d tag >= v2.0.14\n", len(filtered))
+	for _, tag := range filtered {
+		fmt.Printf("-> Scarico proto per tag %s\n", tag)
+		localDir := filepath.Join("pb", "meshtastic-"+tag)
+		if err := downloadDir(owner, repo, basePath, tag, localDir, githubToken); err != nil {
+			return fmt.Errorf("errore downloadDir per %s: %w", tag, err)
+		}
+		// Compila tutti i .proto in questa directory in .pb.go (per tutti i file presenti)
+		if err := compileProtos(localDir); err != nil {
+			return fmt.Errorf("errore compileProtos %s: %w", tag, err)
+		}
+	}
+	return nil
 }
 
-// ======= DOWNLOAD .proto ========
-
-func downloadDir(token, owner, repo, dirPath, ref, localDir string) error {
-    apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s?ref=%s", owner, repo, dirPath, ref)
-    req, _ := http.NewRequest("GET", apiURL, nil)
-    if token != "" {
-        req.Header.Set("Authorization", "token "+token)
-    }
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        return err
-    }
-    defer resp.Body.Close()
-    if resp.StatusCode != 200 {
-        body, _ := io.ReadAll(resp.Body)
-        return fmt.Errorf("GitHub API error %d: %s", resp.StatusCode, body)
-    }
-    var items []Content
-    if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
-        return err
-    }
-    if err := os.MkdirAll(localDir, 0755); err != nil {
-        return err
-    }
-    for _, item := range items {
-        dst := filepath.Join(localDir, item.Name)
-        if item.Type == "file" {
-            if err := downloadFile(token, item.DownloadURL, dst); err != nil {
-                return err
-            }
-        } else if item.Type == "dir" {
-            if err := downloadDir(token, owner, repo, item.Path, ref, dst); err != nil {
-                return err
-            }
-        }
-    }
-    return nil
+func listTags(owner, repo, githubToken string) ([]string, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/tags?per_page=100", owner, repo)
+	req, _ := http.NewRequest("GET", url, nil)
+	if githubToken != "" {
+		req.Header.Set("Authorization", "token "+githubToken)
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var tags []Tag
+	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, t := range tags {
+		names = append(names, t.Name)
+	}
+	sort.Strings(names)
+	return names, nil
 }
 
-func downloadFile(token, url, dest string) error {
-    req, _ := http.NewRequest("GET", url, nil)
-    if token != "" {
-        req.Header.Set("Authorization", "token "+token)
-    }
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        return err
-    }
-    defer resp.Body.Close()
-    if resp.StatusCode != 200 {
-        body, _ := io.ReadAll(resp.Body)
-        return fmt.Errorf("download %s errore %d: %s", url, resp.StatusCode, body)
-    }
-    f, err := os.Create(dest)
-    if err != nil {
-        return err
-    }
-    defer f.Close()
-    _, err = io.Copy(f, resp.Body)
-    return err
+func filterTags(tags []string, min string) []string {
+	var out []string
+	for _, t := range tags {
+		if versionRe.MatchString(t) && compareVer(t, min) >= 0 {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
-// ====== VERSIONI =======
+// compareVer("v2.0.15", "v2.0.14") > 0
+func compareVer(a, b string) int {
+	av := strings.TrimPrefix(a, "v")
+	bv := strings.TrimPrefix(b, "v")
+	return strings.Compare(av, bv)
+}
 
-var versionRegexp = regexp.MustCompile(`v(\d+)\.(\d+)\.(\d+)`)
-func parseVer(s string) [3]int {
-    m := versionRegexp.FindStringSubmatch(s)
-    if len(m) != 4 {
-        return [3]int{0, 0, 0}
-    }
-    return [3]int{atoi(m[1]), atoi(m[2]), atoi(m[3])}
+func downloadDir(owner, repo, dirPath, ref, localDir, githubToken string) error {
+	apiURL := fmt.Sprintf(
+		"https://api.github.com/repos/%s/%s/contents/%s?ref=%s",
+		owner, repo, dirPath, ref,
+	)
+	req, _ := http.NewRequest("GET", apiURL, nil)
+	if githubToken != "" {
+		req.Header.Set("Authorization", "token "+githubToken)
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("GitHub API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var items []Content
+	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+		return err
+	}
+
+	// Assicura che la cartella locale esista
+	if err := os.MkdirAll(localDir, 0755); err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		localPath := filepath.Join(localDir, item.Name)
+		switch item.Type {
+		case "file":
+			if strings.HasSuffix(item.Name, ".proto") {
+				if err := downloadFile(item.DownloadURL, localPath, githubToken); err != nil {
+					return err
+				}
+				fmt.Printf("✔ Scaricato %s\n", item.Path)
+			}
+		case "dir":
+			if err := downloadDir(owner, repo, item.Path, ref, filepath.Join(localDir, item.Name), githubToken); err != nil {
+				return err
+			}
+		default:
+			fmt.Printf("⚠ Ignoro %s di tipo %s\n", item.Path, item.Type)
+		}
+	}
+	return nil
 }
-func compareVer(a, b [3]int) int {
-    for i := 0; i < 3; i++ {
-        if a[i] < b[i] {
-            return -1
-        }
-        if a[i] > b[i] {
-            return 1
-        }
-    }
-    return 0
+
+func downloadFile(url, dest, githubToken string) error {
+	req, _ := http.NewRequest("GET", url, nil)
+	if githubToken != "" {
+		req.Header.Set("Authorization", "token "+githubToken)
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("download %s -> status %d: %s", url, resp.StatusCode, string(body))
+	}
+	f, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, resp.Body)
+	return err
 }
-func atoi(s string) int { i, _ := strconv.Atoi(s); return i }
+
+func compileProtos(localDir string) error {
+	// Compila tutti i .proto in localDir (e sottocartelle)
+	files := []string{}
+	filepath.Walk(localDir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, ".proto") {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if len(files) == 0 {
+		return fmt.Errorf("nessun .proto trovato in %s", localDir)
+	}
+	args := []string{
+		"--go_out=paths=source_relative:.",
+	}
+	args = append(args, files...)
+	cmd := exec.Command("protoc", args...)
+	cmd.Dir = localDir
+	var out bytes.Buffer
+	cmd.Stderr = &out
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("protoc error: %v\n%s", err, out.String())
+	}
+	return nil
+}
