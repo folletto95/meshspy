@@ -24,7 +24,8 @@ RUN git clone --depth 1 --branch "${PROTO_VERSION}" https://github.com/meshtasti
 # 3) Genera i binding Go
 RUN protoc \
       --proto_path=protobufs \
-      --go_out=. \
+      --go_out=pb/meshtastic \
+      --go_opt=paths=source_relative \
       --go_opt=module=github.com/folletto95/meshspy \
       protobufs/meshtastic/*.proto
 
