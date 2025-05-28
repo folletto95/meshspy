@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Installazione plugin protoc-gen-go
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.5
 
 WORKDIR /app
 
