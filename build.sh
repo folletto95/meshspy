@@ -1,36 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ————————————————————————————
-# 1. Caricamento .env (se esiste)
-# ————————————————————————————
+# Carica variabili da .env se presente
 if [[ -f .env ]]; then
-  set -o allexport
+  # shellcheck disable=SC1091
   source .env
-  set +o allexport
 fi
 
-# ————————————————————————————
-# 2. Controllo credenziali Docker
-# ————————————————————————————
-: "${DOCKER_USERNAME:?Devi impostare DOCKER_USERNAME (usa .env o segreti CI)}"
-: "${DOCKER_PASSWORD:?Devi impostare DOCKER_PASSWORD (usa .env o segreti CI)}"
-DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
+# Login automatico se configurato
+if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
+  echo "$DOCKER_PASSWORD" | docker login docker.io \
+    --username "$DOCKER_USERNAME" --password-stdin
+fi
 
-echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" \
-  --username "$DOCKER_USERNAME" --password-stdin
-
-# ————————————————————————————
-# 3. Parametri configurabili
-# ————————————————————————————
+# Parametri (override in .env o CLI)
 IMAGE="${IMAGE:-nicbad/meshspy}"
 TAG="${TAG:-latest}"
 GOOS="linux"
 ARCHS=(amd64 386 armv6 armv7 arm64)
 
-# ————————————————————————————
-# 4. Bootstrap go.mod/go.sum (solo se mancanti)
-# ————————————————————————————
+# Se manca go.mod, lo generiamo con Go ≥1.24
 if [[ ! -f go.mod ]]; then
   echo "🛠 Generating go.mod and go.sum…"
   docker run --rm \
@@ -41,9 +30,7 @@ if [[ ! -f go.mod ]]; then
       go mod tidy"
 fi
 
-# ————————————————————————————
-# 5. Mappe per build-arg e manifest annotate
-# ————————————————————————————
+# Mappe per build-arg e manifest annotate
 declare -A GOARCH=( [amd64]=amd64 [386]=386 [armv6]=arm [armv7]=arm [arm64]=arm64 )
 declare -A GOARM=(  [armv6]=6     [armv7]=7                )
 declare -A MAN_OPTS=(
@@ -54,14 +41,12 @@ declare -A MAN_OPTS=(
   [arm64]="--os linux --arch arm64"
 )
 
-# ————————————————————————————
-# 6. Build & Push mono-arch (incluso plugin)
-# ————————————————————————————
 echo "🛠 Building & pushing single-arch images for: ${ARCHS[*]}"
 for arch in "${ARCHS[@]}"; do
   TAG_ARCH="${IMAGE}:${TAG}-${arch}"
   echo " • Building $TAG_ARCH"
 
+  # Build mono-arch
   build_args=( --no-cache -t "$TAG_ARCH" )
   build_args+=( --build-arg "GOOS=$GOOS" )
   build_args+=( --build-arg "GOARCH=${GOARCH[$arch]}" )
@@ -69,18 +54,18 @@ for arch in "${ARCHS[@]}"; do
     build_args+=( --build-arg "GOARM=${GOARM[$arch]}" )
   fi
   build_args+=( . )
-
   docker build "${build_args[@]}"
+
+  # Push slice
   echo " → Pushing $TAG_ARCH"
   docker push "$TAG_ARCH"
 done
 
-# ————————————————————————————
-# 7. Manifest multi-arch
-# ————————————————————————————
 echo "📦 Preparing manifest ${IMAGE}:${TAG}"
+# Rimuove eventuale manifest esistente
 docker manifest rm "${IMAGE}:${TAG}" >/dev/null 2>&1 || true
 
+# Crea manifest multi-arch
 manifest_args=( manifest create "${IMAGE}:${TAG}" )
 for arch in "${ARCHS[@]}"; do
   manifest_args+=( "${IMAGE}:${TAG}-${arch}" )
