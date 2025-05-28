@@ -17,7 +17,6 @@ fi
 : "${DOCKER_PASSWORD:?Devi impostare DOCKER_PASSWORD (usa .env o segreti CI)}"
 DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
 
-# Effettua il login (password pipata via stdin, non appare nei log)
 echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" \
   --username "$DOCKER_USERNAME" --password-stdin
 
@@ -56,7 +55,7 @@ declare -A MAN_OPTS=(
 )
 
 # ————————————————————————————
-# 6. Build & Push mono-arch
+# 6. Build & Push mono-arch (incluso plugin)
 # ————————————————————————————
 echo "🛠 Building & pushing single-arch images for: ${ARCHS[*]}"
 for arch in "${ARCHS[@]}"; do
@@ -77,7 +76,7 @@ for arch in "${ARCHS[@]}"; do
 done
 
 # ————————————————————————————
-# 7. Creazione e push del manifest multi-arch
+# 7. Manifest multi-arch
 # ————————————————————————————
 echo "📦 Preparing manifest ${IMAGE}:${TAG}"
 docker manifest rm "${IMAGE}:${TAG}" >/dev/null 2>&1 || true
