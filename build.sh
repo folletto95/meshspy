@@ -32,7 +32,7 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
     echo "⏩ Salto $PROTO_VERSION (proto non standard)"
     continue
   fi
-  PROTO_DIR="internal/proto/${PROTO_VERSION}"
+  PROTO_DIR="proto/${PROTO_VERSION}"
   if [[ -d "${PROTO_DIR}" ]]; then
     echo "✔️ Proto già presenti: $PROTO_DIR"
     continue
@@ -64,16 +64,16 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
       go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0
       export PATH=$PATH:$(go env GOPATH)/bin
       while read -r version; do
-        rm -rf internal/proto/$version
-        mkdir -p internal/proto/$version
+        rm -rf proto/$version
+        mkdir -p proto/$version
         for f in /tmp/proto-$version-copy/*.proto /tmp/proto-$version-copy/meshtastic/*.proto; do
           [[ -f "$f" ]] || continue
           protoc \
             --experimental_allow_proto3_optional \
             -I /tmp/proto-$version-copy \
-            --go_out=internal/proto/$version \
+            --go_out=proto/$version \
             --go_opt=paths=source_relative \
-            --go_opt=Mnanopb.proto=meshspy/internal/proto/$version \
+            --go_opt=Mnanopb.proto=meshspy/proto/$version \
             "$f" || true
         done
       done < '"$PROTO_MAP_FILE"'
