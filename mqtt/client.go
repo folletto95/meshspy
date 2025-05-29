@@ -1,40 +1,43 @@
-package mqtt
+package meshtastic
 
 import (
+	"bufio"
+	"bytes"
 	"log"
-
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"os/exec"
+	"regexp"
+	"strings"
 )
 
-type Publisher struct {
-	client mqtt.Client
-	topic  string
-	debug  bool
+type Info struct {
+	NodeName string
+	Firmware string
 }
 
-func NewPublisher(broker, clientID, topic, user, pass string, debug bool) *Publisher {
-	opts := mqtt.NewClientOptions().AddBroker(broker).SetClientID(clientID)
-	if user != "" {
-		opts.SetUsername(user)
-		opts.SetPassword(pass)
-	}
-	client := mqtt.NewClient(opts)
-	if tok := client.Connect(); tok.Wait() && tok.Error() != nil {
-		log.Fatalf("MQTT connection failed: %v", tok.Error())
-	}
-	return &Publisher{client: client, topic: topic, debug: debug}
-}
+var nameRe = regexp.MustCompile(`(?i)Owner: (.+)`)
+var fwRe = regexp.MustCompile(`(?i)Firmware: ([^\s]+)`)
 
-func (p *Publisher) Publish(payload string) {
-	tok := p.client.Publish(p.topic, 0, false, payload)
-	tok.Wait()
-	if err := tok.Error(); err != nil {
-		log.Printf("MQTT publish error: %v", err)
-	} else if p.debug {
-		log.Printf("Published: %s", payload)
-	}
-}
+func GetInfo(port string) (*Info, error) {
+	cmd := exec.Command("meshtastic-go", "--port", port, "info")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
 
-func (p *Publisher) Close() {
-	p.client.Disconnect(250)
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(&out)
+	info := &Info{}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if m := nameRe.FindStringSubmatch(line); len(m) == 2 {
+			info.NodeName = strings.TrimSpace(m[1])
+		}
+		if m := fwRe.FindStringSubmatch(line); len(m) == 2 {
+			info.Firmware = strings.TrimSpace(m[1])
+		}
+	}
+
+	return info, nil
 }
