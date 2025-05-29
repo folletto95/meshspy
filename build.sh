@@ -125,7 +125,7 @@ docker buildx build \
 echo "🔗 Creazione manifest multipiattaforma completo (facoltativo)"
 docker manifest create "${IMAGE}:${TAG}" \
   "${IMAGE}:${TAG}-armv6" \
-  "${IMAGE}:${TAG}"
+  #"${IMAGE}:${TAG}"
 
 docker manifest push "${IMAGE}:${TAG}"
 
