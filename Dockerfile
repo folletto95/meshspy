@@ -43,7 +43,7 @@ RUN env GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 \
 ###########################
 
 # Immagine runtime minima
-FROM FROM arm32v6/alpine:3.18
+FROM arm32v6/alpine:3.18
 
 WORKDIR /app
 
