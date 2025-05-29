@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Carica variabili da .env se presente
-if [[ -f .env ]]; then
-  source .env
+if [[ -f .env.build ]]; then
+  source .env.build
 fi
 
 # Login automatico se configurato
