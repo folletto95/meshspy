@@ -30,7 +30,8 @@ RUN go mod download
 COPY . .
 
 # Compilazione binario con ottimizzazioni
-RUN go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
+RUN echo "🔍 GOARCH=$GOARCH, GOARM=$GOARM, GOOS=$GOOS" && \
+    go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
 ###########################
 # 🏁 STAGE: Runtime finale
