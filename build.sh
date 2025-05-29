@@ -102,12 +102,12 @@ docker buildx use meshspy-builder
 docker buildx inspect --bootstrap
 
 # 🔨 Build ARMv6 separata (immagine base compatibile)
-echo "🐹 Build ARMv6 con arm32v6/golang:1.22.9-alpine"
+echo "🐹 Build ARMv6 con arm32v6/golang:1.21.0-alpine"
 docker buildx build \
   --platform linux/arm/v6 \
   --push \
   -t "${IMAGE}:${TAG}-armv6" \
-  --build-arg BASE_IMAGE=arm32v6/golang:1.22.9-alpine \
+  --build-arg BASE_IMAGE=arm32v6/golang:1.21.0-alpine \
   --build-arg GOARCH=arm \
   --build-arg GOARM=6 \
   .
