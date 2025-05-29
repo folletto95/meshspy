@@ -30,14 +30,20 @@ RUN go mod download
 COPY . .
 
 # Compilazione binario con ottimizzazioni
-RUN GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM CGO_ENABLED=$CGO_ENABLED \
-    go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
+#RUN GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM CGO_ENABLED=$CGO_ENABLED \
+#    go build -ldflags="-s -w" -o meshspy ./... && \
+#    file meshspy
+
+RUN env GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 \
+    go build -ldflags="-s -w" -o meshspy ./cmd/meshspy && \
+    file meshspy
+
 ###########################
 # 🏁 STAGE: Runtime finale
 ###########################
 
 # Immagine runtime minima
-FROM alpine:3.18
+FROM FROM arm32v6/alpine:3.18
 
 WORKDIR /app
 
