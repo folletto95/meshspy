@@ -101,31 +101,31 @@ fi
 docker buildx use meshspy-builder
 docker buildx inspect --bootstrap
 
-# 🔨 Build ARMv6 senza buildx
+# 🔨 Build ARMv6 separata (buildx fallback per piattaforme legacy)
 echo "🐹 Build ARMv6 senza buildx (solo se host ARM compatibile)"
 docker buildx build \
-  --platform linux/arm/v6 \
+  --platform ${ARCH_ARMV6} \
   --push \
-  -t nicbad/meshspy:latest-armv6 \
+  -t "${IMAGE}:${TAG}-armv6" \
   --build-arg GOARCH=arm \
   --build-arg GOARM=6 \
   --build-arg BASE_IMAGE=arm32v6/golang:1.21.0-alpine \
   .
 
-# 🚀 Build parallela per tutte le altre architetture
-echo "🚀 Build & push multipiattaforma per: $PLATFORMS_PARALLEL"
+# 🚀 Build multipiattaforma per le altre architetture
+echo "🚀 Build & push multipiattaforma per: ${PLATFORMS_PARALLEL}"
 docker buildx build \
-  --platform "$PLATFORMS_PARALLEL" \
+  --platform "${PLATFORMS_PARALLEL}" \
   --push \
   -t "${IMAGE}:${TAG}" \
   --build-arg BASE_IMAGE=golang:1.21-bullseye \
   .
 
-# (Opzionale) 👉 Unione ARMv6 nel manifest principale
+# 🔗 Unione ARMv6 nel manifest principale
 echo "🔗 Creazione manifest multipiattaforma completo (facoltativo)"
 docker manifest create "${IMAGE}:${TAG}" \
   "${IMAGE}:${TAG}-armv6" \
-  #"${IMAGE}:${TAG}"
+  "${IMAGE}:${TAG}"
 
 docker manifest push "${IMAGE}:${TAG}"
 

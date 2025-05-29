@@ -4,36 +4,45 @@
 # 🔨 STAGE: Builder
 ###########################
 
-# L’immagine base viene ancora passata da build.sh
+# L'immagine base viene passata da build.sh tramite BASE_IMAGE
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE:-golang:1.21-bullseye} AS builder
 
-# Rimuoviamo i vecchi ARG GOOS/GOARCH/GOARM
-# Aggiungiamo invece TARGETPLATFORM
-ARG TARGETPLATFORM
-ENV CGO_ENABLED=0
+# Parametri di compilazione Go (impostati da build.sh)
+ARG GOOS=linux
+ARG GOARCH=arm
+ARG GOARM=6
 
-# Impostiamo la cartella di lavoro e copiamo sorgenti
+# Costruzione statica del binario (CGO disabilitato)
+ENV CGO_ENABLED=0 \
+    GOOS=${GOOS} \
+    GOARCH=${GOARCH} \
+    GOARM=${GOARM}
+
 WORKDIR /app
+
+# Scarica i moduli Go
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+
+# Copia tutti i sorgenti
 COPY . .
 
-# Selezioniamo i valori di GOOS/GOARCH/GOARM in base a TARGETPLATFORM
-RUN echo "Building for $TARGETPLATFORM" \
- && case "$TARGETPLATFORM" in \
-      "linux/arm/v6") GOOS=linux GOARCH=arm GOARM=6 ;; \
-      "linux/arm/v7") GOOS=linux GOARCH=arm GOARM=7 ;; \
-      "linux/amd64") GOOS=linux GOARCH=amd64 ;; \
-      *)             GOOS=linux GOARCH=$TARGETARCH ;; \
-    esac \
- && go build -trimpath -ldflags "-s -w" -o meshspy ./cmd/meshspy
+# Compilazione binario con ottimizzazioni
+RUN go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
 ###########################
 # 🏁 STAGE: Runtime finale
 ###########################
 
-FROM alpine:3.18 AS runtime
+# Immagine runtime minima
+FROM alpine:3.18
 
 WORKDIR /app
+
+# Copia solo il binario compilato
 COPY --from=builder /app/meshspy .
 
+# Avvio del binario
 ENTRYPOINT ["./meshspy"]
