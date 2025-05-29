@@ -63,9 +63,13 @@ func main() {
             continue
         }
 
+        // DEBUG: stampo *tutte* le righe ricevute DA TOGLIERE
+        log.Printf("[DEBUG serial] %q", line) //DA TOGLIERE
+
         node := parseNodeName(line)
         // ignora righe senza ID, ID vuoto o "0x0"
         if node == "" || node == "0x0" {
+            log.Printf("[DEBUG parse] nessun nodo in linea %q", line) //DA TOGLIERE
             continue
         }
         // evita duplicati consecutivi
