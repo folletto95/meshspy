@@ -18,9 +18,13 @@ ENV CGO_ENABLED=0 \
 
 WORKDIR /app
 
-# Installa git (necessario per clonare meshtastic-go)
-RUN apt-get update && apt-get install -y git
-
+# 🔁 Installa git condizionalmente (Alpine vs Debian)
+RUN echo "🔧 Installing git depending on base image: ${BASE_IMAGE}" && \
+    ( \
+      command -v apt-get >/dev/null 2>&1 && apt-get update && apt-get install -y git || \
+      command -v apk >/dev/null 2>&1 && apk add --no-cache git \
+    )
+    
 # Scarica i moduli Go del progetto principale
 COPY go.mod ./
 COPY go.sum ./
