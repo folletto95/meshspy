@@ -30,7 +30,7 @@ RUN go mod download
 COPY . .
 
 # Compilazione binario con ottimizzazioni
-RUN go build -ldflags="-s -w" -o meshspy ./cmd
+RUN go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
 ###########################
 # 🏁 STAGE: Runtime finale
