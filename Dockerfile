@@ -35,10 +35,11 @@ COPY . .
 # RUN GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM CGO_ENABLED=$CGO_ENABLED \
 #     go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
-# Se vuoi fare debug dell'output, installa `file` con apk
-RUN apk add --no-cache file && \
-    go build -ldflags="-s -w" -o meshspy ./cmd/meshspy && \
-    file meshspy
+# Se vuoi fare debug dell'output, installa `file`
+# Compilazione binario con ottimizzazioni
+RUN go build -ldflags="-s -w" -o meshspy ./cmd/meshspy && \
+    (command -v file && file meshspy || echo "⚠️  'file' command not available, skipping inspection")
+
 
 ###########################
 # 🏁 STAGE: Runtime finale
