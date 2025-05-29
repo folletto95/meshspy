@@ -30,11 +30,13 @@ RUN go mod download
 COPY . .
 
 # Compilazione binario con ottimizzazioni
-#RUN GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM CGO_ENABLED=$CGO_ENABLED \
-#    go build -ldflags="-s -w" -o meshspy ./... && \
-#    file meshspy
+# La seguente riga usa i parametri passati da build.sh
+# Se vuoi compilare genericamente per tutti gli architetture, puoi usare questa riga:
+# RUN GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM CGO_ENABLED=$CGO_ENABLED \
+#     go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
-RUN env GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 \
+# Se vuoi fare debug dell'output, installa `file` con apk
+RUN apk add --no-cache file && \
     go build -ldflags="-s -w" -o meshspy ./cmd/meshspy && \
     file meshspy
 
@@ -42,13 +44,13 @@ RUN env GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 \
 # 🏁 STAGE: Runtime finale
 ###########################
 
-# Immagine runtime minima
+# Immagine runtime minima (ridotta e leggera)
 FROM alpine:3.18
 
 WORKDIR /app
 
-# Copia solo il binario compilato
+# Copia solo il binario compilato dal builder
 COPY --from=builder /app/meshspy .
 
-# Avvio del binario
+# Avvio del binario all'avvio del container
 ENTRYPOINT ["./meshspy"]

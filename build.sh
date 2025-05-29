@@ -104,7 +104,7 @@ docker buildx inspect --bootstrap
 # 🔨 Build ARMv6 separata (immagine base compatibile)
 echo "🐹 Build ARMv6 con arm32v6/golang:1.21.0-alpine"
 docker buildx build \
-  --platform linux/arm/v6 \
+  --platform "$ARCH_ARMV6" \
   --push \
   -t "${IMAGE}:${TAG}-armv6" \
   --build-arg GOARCH=arm \
