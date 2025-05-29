@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  meshspy:
+    image: nicbad/meshspy:latest
+    container_name: meshspy
+    entrypoint: /bin/sh
+    restart: unless-stopped
+    environment:
+      - SERIAL_PORT=/dev/ttyACM0
+      - BAUD_RATE=115200
+      - MQTT_BROKER=tcp://smpisa.ddns.net:1883
+      - MQTT_TOPIC=meshspy
+      - MQTT_CLIENT_ID=meshspy-berry
+      - MQTT_USER=testmeshspy
+      - MQTT_PASS=test1
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+    group_add:
+      - "20"
+    tty: true
+    stdin_open: true
