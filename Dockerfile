@@ -4,54 +4,36 @@
 # 🔨 STAGE: Builder
 ###########################
 
-# L'immagine base viene passata da build.sh tramite BASE_IMAGE
+# L’immagine base viene ancora passata da build.sh
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE:-golang:1.21-bullseye} AS builder
 
-# Parametri di compilazione Go (impostati da build.sh)
-ARG GOOS=linux
-ARG GOARCH=arm
-ARG GOARM=6
+# Rimuoviamo i vecchi ARG GOOS/GOARCH/GOARM
+# Aggiungiamo invece TARGETPLATFORM
+ARG TARGETPLATFORM
+ENV CGO_ENABLED=0
 
-# Costruzione statica del binario (CGO disabilitato)
-ENV CGO_ENABLED=0 \
-    GOOS=${GOOS} \
-    GOARCH=${GOARCH} \
-    GOARM=${GOARM}
-
+# Impostiamo la cartella di lavoro e copiamo sorgenti
 WORKDIR /app
-
-# Scarica i moduli Go
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
-
-# Copia tutti i sorgenti
 COPY . .
 
-# Compilazione binario con ottimizzazioni
-# La seguente riga usa i parametri passati da build.sh
-# Se vuoi compilare genericamente per tutti gli architetture, puoi usare questa riga:
-# RUN GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM CGO_ENABLED=$CGO_ENABLED \
-#     go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
-
-# Se vuoi fare debug dell'output, installa `file`
-# Compilazione binario con ottimizzazioni
-RUN GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM CGO_ENABLED=$CGO_ENABLED \
-    go build -ldflags="-s -w" -o meshspy ./cmd/meshspy && \
-    (command -v file && file meshspy || echo "⚠️  'file' command not available, skipping inspection")
+# Selezioniamo i valori di GOOS/GOARCH/GOARM in base a TARGETPLATFORM
+RUN echo "Building for $TARGETPLATFORM" \
+ && case "$TARGETPLATFORM" in \
+      "linux/arm/v6") GOOS=linux GOARCH=arm GOARM=6 ;; \
+      "linux/arm/v7") GOOS=linux GOARCH=arm GOARM=7 ;; \
+      "linux/amd64") GOOS=linux GOARCH=amd64 ;; \
+      *)             GOOS=linux GOARCH=$TARGETARCH ;; \
+    esac \
+ && go build -trimpath -ldflags "-s -w" -o meshspy ./cmd/meshspy
 
 ###########################
 # 🏁 STAGE: Runtime finale
 ###########################
 
-# Immagine runtime minima (ridotta e leggera)
-FROM alpine:3.18
+FROM alpine:3.18 AS runtime
 
 WORKDIR /app
-
-# Copia solo il binario compilato dal builder
 COPY --from=builder /app/meshspy .
 
-# Avvio del binario all'avvio del container
 ENTRYPOINT ["./meshspy"]
