@@ -107,9 +107,9 @@ docker buildx build \
   --platform linux/arm/v6 \
   --push \
   -t "${IMAGE}:${TAG}-armv6" \
-  --build-arg BASE_IMAGE=arm32v6/golang:1.21.0-alpine \
   --build-arg GOARCH=arm \
   --build-arg GOARM=6 \
+  --build-arg BASE_IMAGE=arm32v6/golang:1.21.0-alpine \
   .
 
 # 🚀 Build parallela per tutte le altre architetture
