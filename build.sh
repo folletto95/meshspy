@@ -103,13 +103,15 @@ docker buildx inspect --bootstrap
 
 # 🔨 Build ARMv6 senza buildx
 echo "🐹 Build ARMv6 senza buildx (solo se host ARM compatibile)"
-docker build \
-  -t "${IMAGE}:${TAG}-armv6" \
+docker buildx build \
+  --platform linux/arm/v6 \
+  --push \
+  -t nicbad/meshspy:latest-armv6 \
   --build-arg GOARCH=arm \
   --build-arg GOARM=6 \
   --build-arg BASE_IMAGE=arm32v6/golang:1.21.0-alpine \
   .
-  
+
 # 🚀 Build parallela per tutte le altre architetture
 echo "🚀 Build & push multipiattaforma per: $PLATFORMS_PARALLEL"
 docker buildx build \
