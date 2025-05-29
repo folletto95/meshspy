@@ -10,8 +10,8 @@ FROM ${BASE_IMAGE:-golang:1.21-bullseye} AS builder
 
 # Parametri di compilazione Go (impostati da build.sh)
 ARG GOOS=linux
-ARG GOARCH=amd64
-ARG GOARM
+ARG GOARCH=arm
+ARG GOARM=6
 
 # Costruzione statica del binario (CGO disabilitato)
 ENV CGO_ENABLED=0 \
