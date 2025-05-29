@@ -4,16 +4,13 @@
 # 🔨 STAGE: Builder
 ###########################
 
-# L'immagine base viene passata da build.sh tramite BASE_IMAGE
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE:-golang:1.21-bullseye} AS builder
 
-# Parametri di compilazione Go (impostati da build.sh)
 ARG GOOS=linux
 ARG GOARCH=arm
 ARG GOARM=6
 
-# Costruzione statica del binario (CGO disabilitato)
 ENV CGO_ENABLED=0 \
     GOOS=${GOOS} \
     GOARCH=${GOARCH} \
@@ -21,28 +18,39 @@ ENV CGO_ENABLED=0 \
 
 WORKDIR /app
 
-# Scarica i moduli Go
+# Installa git (necessario per clonare meshtastic-go)
+RUN apt-get update && apt-get install -y git
+
+# Scarica i moduli Go del progetto principale
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 
-# Copia tutti i sorgenti
+# Copia i sorgenti principali
 COPY . .
 
-# Compilazione binario con ottimizzazioni
+# ✅ COMPILA meshspy
 RUN go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
+
+# ✅ CLONA E COMPILA meshtastic-go
+RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go && \
+    cd /tmp/meshtastic-go/cmd/meshtastic-go && \
+    go build -ldflags="-s -w" -o /usr/local/bin/meshtastic-go && \
+    chmod +x /usr/local/bin/meshtastic-go
 
 ###########################
 # 🏁 STAGE: Runtime finale
 ###########################
 
-# Immagine runtime minima
 FROM alpine:3.18
 
 WORKDIR /app
 
-# Copia solo il binario compilato
+# Copia binario principale
 COPY --from=builder /app/meshspy .
 
-# Avvio del binario
+# Copia binario meshtastic-go
+COPY --from=builder /usr/local/bin/meshtastic-go /usr/local/bin/meshtastic-go
+
+# Avvio del servizio principale
 ENTRYPOINT ["./meshspy"]
