@@ -18,9 +18,11 @@ type Info struct {
 	Firmware string
 }
 
-// Espressioni regolari per estrarre nome del nodo e firmware
-var nameRe = regexp.MustCompile(`long_name:"([^"]+)"`)
-var fwRe = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
+// Espressioni regolari
+var (
+	nameRe = regexp.MustCompile(`long_name:"([^"]+)"`)
+	fwRe   = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
+)
 
 // GetInfo esegue meshtastic-go e recupera le informazioni dal dispositivo seriale
 func GetInfo(port string) (*Info, error) {
@@ -28,11 +30,11 @@ func GetInfo(port string) (*Info, error) {
 
 	cmd := exec.Command("meshtastic-go", "--port", port, "info")
 	log.Printf("📤 Eseguo comando: %v", cmd.String())
+
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 
-	// Esecuzione del comando
 	if err := cmd.Run(); err != nil {
 		log.Printf("❌ Errore durante l'esecuzione di meshtastic-go: %v\nOutput:\n%s", err, out.String())
 		return nil, err
@@ -41,20 +43,38 @@ func GetInfo(port string) (*Info, error) {
 	fullOutput := out.String()
 	log.Printf("🔍 Output completo di meshtastic-go:\n%s", fullOutput)
 
-	// Analisi dell'output riga per riga
 	scanner := bufio.NewScanner(strings.NewReader(fullOutput))
+	foundRadioSettings := false
+	foundFirstNode := false
 	info := &Info{}
+
 	for scanner.Scan() {
 		line := scanner.Text()
-		if m := nameRe.FindStringSubmatch(line); len(m) == 2 {
-			info.NodeName = strings.TrimSpace(m[1])
+
+		if strings.Contains(line, "Radio Settings:") {
+			foundRadioSettings = true
 		}
-		if m := fwRe.FindStringSubmatch(line); len(m) == 2 {
-			info.Firmware = strings.TrimSpace(m[1])
+
+		if foundRadioSettings && strings.HasPrefix(line, "Node Info") && !foundFirstNode {
+			foundFirstNode = true
+			continue
+		}
+
+		if foundFirstNode {
+			if m := nameRe.FindStringSubmatch(line); len(m) == 2 {
+				info.NodeName = strings.TrimSpace(m[1])
+			}
+			if m := fwRe.FindStringSubmatch(line); len(m) == 2 {
+				info.Firmware = strings.TrimSpace(m[1])
+			}
+
+			// Exit if both values are found
+			if info.NodeName != "" && info.Firmware != "" {
+				break
+			}
 		}
 	}
 
-	// Log finale per debug
 	log.Printf("✅ Info trovate - Nodo: %s, Firmware: %s\n", info.NodeName, info.Firmware)
 	return info, nil
 }
