@@ -3,7 +3,7 @@ package mqtt
 import (
 	"bufio"
 	"bytes"
-	"log"
+	//"log"
 	"os/exec"
 	"regexp"
 	"strings"
