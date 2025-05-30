@@ -13,6 +13,7 @@ import (
 	"meshspy/config"
 	"meshspy/mqtt"
 	"meshspy/serial"
+	"meshspy/client"
 )
 
 func main() {
