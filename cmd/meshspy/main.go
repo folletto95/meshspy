@@ -30,7 +30,7 @@ func main() {
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
-		err := serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, func(data string) {
+		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, func(data string) {
 			// Pubblica ogni messaggio ricevuto sul topic MQTT
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()
@@ -40,9 +40,6 @@ func main() {
 				log.Printf("📡 Dato pubblicato su '%s': %s", cfg.MQTTTopic, data)
 			}
 		})
-		if err != nil {
-			log.Fatalf("❌ Errore lettura seriale: %v", err)
-		}
 	}()
 
 	// 📡 Stampa info da meshtastic-go (se disponibile)
