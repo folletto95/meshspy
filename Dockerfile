@@ -20,10 +20,13 @@ WORKDIR /app
 
 # 🔁 Installa git condizionalmente (Alpine vs Debian)
 RUN echo "🔧 Installing git depending on base image: ${BASE_IMAGE}" && \
-    ( \
-      command -v apt-get >/dev/null 2>&1 && apt-get update && apt-get install -y git || \
-      command -v apk >/dev/null 2>&1 && apk add --no-cache git \
-    )
+    if command -v apt-get >/dev/null 2>&1; then \
+        apt-get update && apt-get install -y git; \
+    elif command -v apk >/dev/null 2>&1; then \
+        apk add --no-cache git; \
+    else \
+        echo "❌ Unsupported package manager" && exit 1; \
+    fi
 
 # Scarica i moduli Go del progetto principale
 COPY go.mod ./
