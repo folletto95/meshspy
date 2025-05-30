@@ -7,6 +7,9 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"meshspy/config"
 )
 
 // Info rappresenta le informazioni estratte dal dispositivo Meshtastic
@@ -50,4 +53,21 @@ func GetInfo(port string) (*Info, error) {
 	// Log finale per debug
 	log.Printf("✅ Info trovate - Nodo: %s, Firmware: %s\n", info.NodeName, info.Firmware)
 	return info, nil
+}
+
+// ConnectMQTT crea e restituisce un client MQTT connesso
+func ConnectMQTT(cfg config.Config) (mqtt.Client, error) {
+	opts := mqtt.NewClientOptions().
+		AddBroker(cfg.MQTTBroker).
+		SetClientID(cfg.ClientID)
+
+	if cfg.User != "" {
+		opts.SetUsername(cfg.User)
+		opts.SetPassword(cfg.Password)
+	}
+
+	client := mqtt.NewClient(opts)
+	token := client.Connect()
+	token.Wait()
+	return client, token.Error()
 }
