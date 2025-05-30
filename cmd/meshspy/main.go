@@ -58,7 +58,7 @@ func main() {
 				log.Printf("📡 Dato pubblicato su '%s': %s", cfg.MQTTTopic, data)
 			}
 		})
-	}()
+	}
 
 	// Mantieni il programma in esecuzione finché non ricevi un segnale di uscita
 	<-sigs
