@@ -7,7 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-    //"os/exec"
+
+	"github.com/joho/godotenv" // ← aggiunto per leggere il file .env
 
 	"meshspy/config"
 	"meshspy/mqtt"
@@ -15,6 +16,11 @@ import (
 )
 
 func main() {
+	// Carica .env.runtime se presente
+	if err := godotenv.Load(".env.runtime"); err != nil {
+		log.Printf("⚠️  Nessun file .env.runtime trovato o errore di caricamento: %v", err)
+	}
+
 	// Carica la configurazione dalle variabili d'ambiente
 	cfg := config.Load()
 
