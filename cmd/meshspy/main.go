@@ -20,7 +20,7 @@ func main() {
 	if err := godotenv.Load(".env.runtime"); err != nil {
 		log.Printf("⚠️  Nessun file .env.runtime trovato o errore di caricamento: %v", err)
 	}
-
+    log.Println("🚀 MeshSpy avviato con successo! Inizializzazione in corso...")
 	// Carica la configurazione dalle variabili d'ambiente
 	cfg := config.Load()
 
