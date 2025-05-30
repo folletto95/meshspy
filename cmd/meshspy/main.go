@@ -16,6 +16,7 @@ import (
 )
 
 func main() {
+    log.Println("🔥 MeshSpy avviamento iniziato...")
 	// Carica .env.runtime se presente
 	if err := godotenv.Load(".env.runtime"); err != nil {
 		log.Printf("⚠️  Nessun file .env.runtime trovato o errore di caricamento: %v", err)
