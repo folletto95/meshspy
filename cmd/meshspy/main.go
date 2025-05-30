@@ -38,11 +38,13 @@ func main() {
 
     // 📡 Stampa info da meshtastic-go (se disponibile)
 	//info, err := client.GetInfo(cfg.SerialPort)
-	if err != nil {
-		log.Printf("⚠️ Errore ottenimento info meshtastic-go: %v", err)
-	} else {
-		fmt.Printf("ℹ️  Info dispositivo Meshtastic:\n%s\n", info)
-	}
+	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "info")
+    output, err := cmd.CombinedOutput()
+	 if err != nil {
+        return "", fmt.Errorf("errore nell'esecuzione di meshtastic-go: %v", err)
+    }
+    return string(output), nil
+}
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
