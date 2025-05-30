@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-    "os/exec"
+    //"os/exec"
 
 	"meshspy/config"
 	"meshspy/mqtt"
