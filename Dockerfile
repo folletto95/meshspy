@@ -36,6 +36,10 @@ RUN go mod download
 # Copia i sorgenti principali
 COPY . .
 
+# Copia il file .env.runtime
+COPY .env.runtime ./
+COPY .env.example ./
+
 # ✅ COMPILA meshspy
 RUN go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
