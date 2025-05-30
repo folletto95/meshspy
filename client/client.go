@@ -1,4 +1,4 @@
-package mqtt
+package client //mqtt
 
 import (
 	"bufio"
@@ -53,7 +53,7 @@ var (
 func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "info")
 	output, err := cmd.CombinedOutput()
-	fmt.Printf("📤 Eseguo comando: %s\n", strings.Join(cmd.Args, " "))
+	//fmt.Printf("📤 Eseguo comando: %s\n", strings.Join(cmd.Args, " "))
 	//fmt.Println("🔍 Output completo di meshtastic-go:\n")
 	//fmt.Println(string(output))
 	if err != nil {
