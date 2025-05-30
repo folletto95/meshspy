@@ -27,6 +27,7 @@ func GetInfo(port string) (*Info, error) {
 	log.Println("📡 Invocazione meshtastic-go per la lettura informazioni...")
 
 	cmd := exec.Command("meshtastic-go", "--port", port, "info")
+	log.Printf("📤 Eseguo comando: %v", cmd.String()) // <--- aggiungi questa riga
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
