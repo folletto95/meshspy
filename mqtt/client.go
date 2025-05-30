@@ -135,8 +135,9 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 		}
 	}
 
-	return node, nil
-	
+		return node, nil
+}
+
 // ConnectMQTT crea e restituisce un client MQTT connesso
 func ConnectMQTT(cfg config.Config) (mqtt.Client, error) {
 	opts := mqtt.NewClientOptions().
