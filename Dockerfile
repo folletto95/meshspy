@@ -36,10 +36,18 @@ RUN go mod download
 # Copia i sorgenti principali
 COPY . .
 
-# Copia il file .env.runtime
-COPY .env.runtime ./
-ENV ENV_FILE_PATH=/app/.env.runtime
-COPY .env.example ./
+
+###########################
+# 🛠️ ENV: Runtime config
+###########################
+
+# Copia il file .env.runtime nel container (se presente)
+RUN echo "copio .env.runtime"
+COPY .env.runtime /app/.env.runtime
+RUN echo "copiato .env.runtime"
+RUN echo "copio .env.example"
+COPY .env.example /app/.env.example
+RUN echo "copiato .env.example"
 
 # ✅ COMPILA meshspy
 RUN go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
