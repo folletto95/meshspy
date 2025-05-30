@@ -15,7 +15,7 @@ import (
 
 func main() {
 	// Carica la configurazione dalle variabili d'ambiente
-	cfg := config.LoadConfig()
+	cfg := config.Load()
 
 	// Connessione al broker MQTT
 	client, err := mqtt.ConnectMQTT(cfg)
@@ -30,7 +30,7 @@ func main() {
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
-		err := serial.ReadSerial(cfg.SerialPort, cfg.BaudRate, func(data string) {
+		err := serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, func(data string) {
 			// Pubblica ogni messaggio ricevuto sul topic MQTT
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()
