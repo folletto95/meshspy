@@ -15,6 +15,7 @@ var nodeRe = regexp.MustCompile(`from=(0x[0-9a-fA-F]+)`)
 var fallbackRe = regexp.MustCompile(`from (0x[0-9a-fA-F]+)`)
 var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
+// ReadLoop apre la porta seriale e legge in loop, pubblicando i pacchetti validi
 func ReadLoop(portName string, baud int, debug bool, publish func(string)) {
 	cfg := &serial.Config{Name: portName, Baud: baud, ReadTimeout: time.Second * 5}
 	port, err := serial.OpenPort(cfg)
@@ -61,10 +62,12 @@ func ReadLoop(portName string, baud int, debug bool, publish func(string)) {
 	}
 }
 
+// cleanLine rimuove i codici ANSI da una riga
 func cleanLine(line string) string {
 	return ansiEscape.ReplaceAllString(line, "")
 }
 
+// parseNodeName estrae l'identificativo del nodo da una riga
 func parseNodeName(line string) string {
 	if m := nodeRe.FindStringSubmatch(line); len(m) == 2 {
 		return m[1]

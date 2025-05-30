@@ -24,7 +24,7 @@ RUN echo "🔧 Installing git depending on base image: ${BASE_IMAGE}" && \
       command -v apt-get >/dev/null 2>&1 && apt-get update && apt-get install -y git || \
       command -v apk >/dev/null 2>&1 && apk add --no-cache git \
     )
-    
+
 # Scarica i moduli Go del progetto principale
 COPY go.mod ./
 COPY go.sum ./
@@ -37,10 +37,10 @@ COPY . .
 RUN go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
 # ✅ CLONA E COMPILA meshtastic-go
-RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go && \
-    cd /tmp/meshtastic-go/cmd/meshtastic-go && \
-    go build -ldflags="-s -w" -o /usr/local/bin/meshtastic-go && \
-    chmod +x /usr/local/bin/meshtastic-go
+RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
+    && cd /tmp/meshtastic-go \
+    && go build -ldflags="-s -w" -o /usr/local/bin/meshtastic-go \
+    && chmod +x /usr/local/bin/meshtastic-go
 
 ###########################
 # 🏁 STAGE: Runtime finale
