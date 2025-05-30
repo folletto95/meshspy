@@ -36,6 +36,14 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
+    // 📡 Stampa info da meshtastic-go (se disponibile)
+	info, err := mqtt.GetInfo(cfg.SerialPort)
+	if err != nil {
+		log.Printf("⚠️ Errore ottenimento info meshtastic-go: %v", err)
+	} else {
+		fmt.Printf("ℹ️  Info dispositivo Meshtastic:\n%s\n", info)
+	}
+
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
 		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, func(data string) {
@@ -49,14 +57,6 @@ func main() {
 			}
 		})
 	}()
-
-	// 📡 Stampa info da meshtastic-go (se disponibile)
-	info, err := mqtt.GetInfo(cfg.SerialPort)
-	if err != nil {
-		log.Printf("⚠️ Errore ottenimento info meshtastic-go: %v", err)
-	} else {
-		fmt.Printf("ℹ️  Info dispositivo Meshtastic:\n%s\n", info)
-	}
 
 	// Mantieni il programma in esecuzione finché non ricevi un segnale di uscita
 	<-sigs
