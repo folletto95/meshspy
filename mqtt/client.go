@@ -1,11 +1,12 @@
 package mqtt
 
 import (
+	"bufio"
 	"bytes"
-	"encoding/json"
 	"log"
 	"os/exec"
-	"strconv"
+	"regexp"
+	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"meshspy/config"
@@ -17,58 +18,43 @@ type Info struct {
 	Firmware string
 }
 
-// struttura per decodificare il JSON restituito da meshtastic-go --json info
-type meshInfo struct {
-	MyNodeNum       string                 `json:"my_node_num"`
-	User            map[string]struct {
-		LongName string `json:"long_name"`
-	} `json:"user"`
-	DeviceMetrics struct {
-		FirmwareVersion string `json:"firmware_version"`
-	} `json:"device_metrics"`
-}
+// Espressioni regolari per estrarre nome del nodo e firmware
+var nameRe = regexp.MustCompile(`long_name:"([^"]+)"`)
+var fwRe = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
 
-// GetInfo esegue meshtastic-go con output JSON e recupera le informazioni dal nodo locale
+// GetInfo esegue meshtastic-go e recupera le informazioni dal dispositivo seriale
 func GetInfo(port string) (*Info, error) {
-	log.Println("📡 Invocazione meshtastic-go per la lettura informazioni.")
-	cmd := exec.Command("meshtastic-go", "--port", port, "info", "--json")
-	log.Printf("📤 Eseguo comando: %v", cmd.String())
+	log.Println("📡 Invocazione meshtastic-go per la lettura informazioni...")
 
+	cmd := exec.Command("meshtastic-go", "--port", port, "info")
+	log.Printf("📤 Eseguo comando: %v", cmd.String())
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 
+	// Esecuzione del comando
 	if err := cmd.Run(); err != nil {
 		log.Printf("❌ Errore durante l'esecuzione di meshtastic-go: %v\nOutput:\n%s", err, out.String())
 		return nil, err
 	}
 
-	var parsed meshInfo
-	if err := json.Unmarshal(out.Bytes(), &parsed); err != nil {
-		log.Printf("❌ Errore parsing JSON: %v\nOutput:\n%s", err, out.String())
-		return nil, err
-	}
+	fullOutput := out.String()
+	log.Printf("🔍 Output completo di meshtastic-go:\n%s", fullOutput)
 
-	info := &Info{
-		Firmware: parsed.DeviceMetrics.FirmwareVersion,
-	}
-
-	// trova il nome del nodo confrontando my_node_num con gli utenti
-	if user, ok := parsed.User[parsed.MyNodeNum]; ok {
-		info.NodeName = user.LongName
-	} else {
-		// fallback: prova a cercare anche con versione int del my_node_num
-		if idInt, err := strconv.ParseInt(parsed.MyNodeNum, 0, 64); err == nil {
-			hexID := "!" + strconv.FormatInt(idInt, 16)
-			for k, u := range parsed.User {
-				if k == hexID {
-					info.NodeName = u.LongName
-					break
-				}
-			}
+	// Analisi dell'output riga per riga
+	scanner := bufio.NewScanner(strings.NewReader(fullOutput))
+	info := &Info{}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if m := nameRe.FindStringSubmatch(line); len(m) == 2 {
+			info.NodeName = strings.TrimSpace(m[1])
+		}
+		if m := fwRe.FindStringSubmatch(line); len(m) == 2 {
+			info.Firmware = strings.TrimSpace(m[1])
 		}
 	}
 
+	// Log finale per debug
 	log.Printf("✅ Info trovate - Nodo: %s, Firmware: %s\n", info.NodeName, info.Firmware)
 	return info, nil
 }
