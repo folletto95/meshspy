@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
@@ -12,16 +13,19 @@ import (
 
 	"meshspy/config"
 	"meshspy/serial"
-	"meshspy/client"
+	"meshspy/mqtt"
 )
 
 func main() {
-    log.Println("🔥 MeshSpy avviamento iniziato...")
+	log.Println("🔥 MeshSpy avviamento iniziato...")
+
 	// Carica .env.runtime se presente
 	if err := godotenv.Load(".env.runtime"); err != nil {
 		log.Printf("⚠️  Nessun file .env.runtime trovato o errore di caricamento: %v", err)
 	}
-    log.Println("🚀 MeshSpy avviato con successo! Inizializzazione in corso...")
+
+	log.Println("🚀 MeshSpy avviato con successo! Inizializzazione in corso...")
+
 	// Carica la configurazione dalle variabili d'ambiente
 	cfg := config.Load()
 
@@ -36,15 +40,14 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-    // 📡 Stampa info da meshtastic-go (se disponibile)
-	//info, err := client.GetInfo(cfg.SerialPort)
-	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "info")
-    output, err := cmd.CombinedOutput()
-	 if err != nil {
-        return "", fmt.Errorf("errore nell'esecuzione di meshtastic-go: %v", err)
-    }
-    return string(output), nil
-}
+	// 📡 Stampa info da meshtastic-go (se disponibile)
+	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", cfg.SerialPort, "info")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("⚠️ Errore ottenimento info meshtastic-go: %v", err)
+	} else {
+		fmt.Printf("ℹ️  Info dispositivo Meshtastic:\n%s\n", output)
+	}
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
@@ -58,7 +61,7 @@ func main() {
 				log.Printf("📡 Dato pubblicato su '%s': %s", cfg.MQTTTopic, data)
 			}
 		})
-	}
+	}()
 
 	// Mantieni il programma in esecuzione finché non ricevi un segnale di uscita
 	<-sigs
