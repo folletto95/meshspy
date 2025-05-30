@@ -19,15 +19,15 @@ type Info struct {
 }
 
 // Espressioni regolari per estrarre nome del nodo e firmware
-var nameRe = regexp.MustCompile(`(?i)Owner: (.+)`)
-var fwRe = regexp.MustCompile(`(?i)Firmware: ([^\s]+)`)
+var nameRe = regexp.MustCompile(`long_name:"([^"]+)"`)
+var fwRe = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
 
 // GetInfo esegue meshtastic-go e recupera le informazioni dal dispositivo seriale
 func GetInfo(port string) (*Info, error) {
 	log.Println("📡 Invocazione meshtastic-go per la lettura informazioni...")
 
 	cmd := exec.Command("meshtastic-go", "--port", port, "info")
-	log.Printf("📤 Eseguo comando: %v", cmd.String()) // <--- aggiungi questa riga
+	log.Printf("📤 Eseguo comando: %v", cmd.String())
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
