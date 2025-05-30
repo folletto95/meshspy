@@ -1,4 +1,4 @@
-package client //mqtt
+package mqtt
 
 import (
 	"bufio"
