@@ -13,9 +13,32 @@ import (
 )
 
 // Info rappresenta le informazioni estratte dal dispositivo Meshtastic
-type Info struct {
-	NodeName string
-	Firmware string
+type NodeInfo struct {
+	ID                string
+	LongName          string
+	ShortName         string
+	MacAddr           string
+	HwModel           string
+	Role              string
+	Latitude          float64
+	Longitude         float64
+	Altitude          int
+	LocationTime      int64
+	LocationSource    string
+	BatteryLevel      int
+	Voltage           float64
+	ChannelUtil       float64
+	AirUtilTx         float64
+	FirmwareVersion   string
+	DeviceStateVer    int
+	CanShutdown       bool
+	HasWifi           bool
+	HasBluetooth      bool
+	HasEthernet       bool
+	RadioRole         string
+	PositionFlags     int
+	RadioHwModel      string
+	HasRemoteHardware bool
 }
 
 // Espressioni regolari
@@ -24,61 +47,96 @@ var (
 	fwRe   = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
 )
 
-// GetInfo esegue meshtastic-go e recupera le informazioni dal dispositivo seriale
-func GetInfo(port string) (*Info, error) {
-	log.Println("📡 Invocazione meshtastic-go per la lettura informazioni...")
-
-	cmd := exec.Command("meshtastic-go", "--port", port, "info")
-	log.Printf("📤 Eseguo comando: %v", cmd.String())
-
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
-
-	if err := cmd.Run(); err != nil {
-		log.Printf("❌ Errore durante l'esecuzione di meshtastic-go: %v\nOutput:\n%s", err, out.String())
+// GetLocalNodeInfo esegue meshtastic-go e recupera i dati dal primo nodo dopo "Radio Settings:"
+func GetLocalNodeInfo(port string) (*NodeInfo, error) {
+	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "info")
+	output, err := cmd.CombinedOutput()
+	fmt.Printf("📤 Eseguo comando: %s\n", strings.Join(cmd.Args, " "))
+	fmt.Println("🔍 Output completo di meshtastic-go:\n")
+	fmt.Println(string(output))
+	if err != nil {
+		fmt.Printf("❌ Errore durante l'esecuzione di meshtastic-go: %v\n", err)
 		return nil, err
 	}
 
-	fullOutput := out.String()
-	log.Printf("🔍 Output completo di meshtastic-go:\n%s", fullOutput)
-
-	scanner := bufio.NewScanner(strings.NewReader(fullOutput))
-	foundRadioSettings := false
-	foundFirstNode := false
-	info := &Info{}
+	scanner := bufio.NewScanner(bytes.NewReader(output))
+	var inNodeInfo bool
+	node := &NodeInfo{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if strings.Contains(line, "Radio Settings:") {
-			foundRadioSettings = true
+		if strings.HasPrefix(line, "Node Info") {
+			if !inNodeInfo {
+				inNodeInfo = true
+				continue
+			} else {
+				break // fermiamoci al secondo nodo
+			}
 		}
 
-		if foundRadioSettings && strings.HasPrefix(line, "Node Info") && !foundFirstNode {
-			foundFirstNode = true
+		if !inNodeInfo {
 			continue
 		}
 
-		if foundFirstNode {
-			if m := nameRe.FindStringSubmatch(line); len(m) == 2 {
-				info.NodeName = strings.TrimSpace(m[1])
+		switch {
+		case strings.HasPrefix(line, "User"):
+			re := regexp.MustCompile(`id:"([^"]+)"\s+long_name:"([^"]+)"\s+short_name:"([^"]+)"\s+macaddr:"([^"]+)"\s+hw_model:(\S+)\s+role:(\S+)`)
+			matches := re.FindStringSubmatch(line)
+			if len(matches) >= 7 {
+				node.ID = matches[1]
+				node.LongName = matches[2]
+				node.ShortName = matches[3]
+				node.MacAddr = matches[4]
+				node.HwModel = matches[5]
+				node.Role = matches[6]
 			}
-			if m := fwRe.FindStringSubmatch(line); len(m) == 2 {
-				info.Firmware = strings.TrimSpace(m[1])
+		case strings.HasPrefix(line, "Position"):
+			re := regexp.MustCompile(`latitude_i:(\d+)\s+longitude_i:(\d+)\s+altitude:(-?\d+)\s+time:(\d+)\s+location_source:(\S+)`)
+			matches := re.FindStringSubmatch(line)
+			if len(matches) >= 6 {
+				lat, _ := strconv.Atoi(matches[1])
+				lon, _ := strconv.Atoi(matches[2])
+				node.Latitude = float64(lat) / 1e7
+				node.Longitude = float64(lon) / 1e7
+				node.Altitude, _ = strconv.Atoi(matches[3])
+				node.LocationTime, _ = strconv.ParseInt(matches[4], 10, 64)
+				node.LocationSource = matches[5]
 			}
-
-			// Exit if both values are found
-			if info.NodeName != "" && info.Firmware != "" {
-				break
+		case strings.HasPrefix(line, "DeviceMetrics"):
+			re := regexp.MustCompile(`battery_level:(\d+)\s+voltage:(\S+)\s+channel_utilization:(\S+)\s+air_util_tx:(\S+)`)
+			matches := re.FindStringSubmatch(line)
+			if len(matches) >= 5 {
+				node.BatteryLevel, _ = strconv.Atoi(matches[1])
+				node.Voltage, _ = strconv.ParseFloat(matches[2], 64)
+				node.ChannelUtil, _ = strconv.ParseFloat(matches[3], 64)
+				node.AirUtilTx, _ = strconv.ParseFloat(matches[4], 64)
 			}
+		case strings.HasPrefix(line, "FirmwareVersion"):
+			node.FirmwareVersion = strings.TrimSpace(strings.TrimPrefix(line, "FirmwareVersion"))
+		case strings.HasPrefix(line, "DeviceStateVersion"):
+			node.DeviceStateVer, _ = strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(line, "DeviceStateVersion")))
+		case strings.HasPrefix(line, "CanShutdown"):
+			node.CanShutdown = strings.Contains(line, "true")
+		case strings.HasPrefix(line, "HasWifi"):
+			node.HasWifi = strings.Contains(line, "true")
+		case strings.HasPrefix(line, "HasBluetooth"):
+			node.HasBluetooth = strings.Contains(line, "true")
+		case strings.HasPrefix(line, "HasEthernet"):
+			node.HasEthernet = strings.Contains(line, "true")
+		case strings.HasPrefix(line, "Role"):
+			node.RadioRole = strings.TrimSpace(strings.TrimPrefix(line, "Role"))
+		case strings.HasPrefix(line, "PositionFlags"):
+			node.PositionFlags, _ = strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(line, "PositionFlags")))
+		case strings.HasPrefix(line, "HwModel"):
+			node.RadioHwModel = strings.TrimSpace(strings.TrimPrefix(line, "HwModel"))
+		case strings.HasPrefix(line, "HasRemoteHardware"):
+			node.HasRemoteHardware = strings.Contains(line, "true")
 		}
 	}
 
-	log.Printf("✅ Info trovate - Nodo: %s, Firmware: %s\n", info.NodeName, info.Firmware)
-	return info, nil
-}
-
+	return node, nil
+	
 // ConnectMQTT crea e restituisce un client MQTT connesso
 func ConnectMQTT(cfg config.Config) (mqtt.Client, error) {
 	opts := mqtt.NewClientOptions().
