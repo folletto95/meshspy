@@ -53,6 +53,7 @@ func GetInfo(port string) (*Info, error) {
 
 	// Log finale per debug
 	log.Printf("✅ Info trovate - Nodo: %s, Firmware: %s\n", info.NodeName, info.Firmware)
+	log.Printf("ℹ️  Info dispositivo Meshtastic:\n%+v\n", info)
 	return info, nil
 }
 
