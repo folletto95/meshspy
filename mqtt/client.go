@@ -3,7 +3,7 @@ package meshtastic
 import (
 	"bufio"
 	"bytes"
-	"log"
+	//"log"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -18,8 +18,7 @@ var nameRe = regexp.MustCompile(`(?i)Owner: (.+)`)
 var fwRe = regexp.MustCompile(`(?i)Firmware: ([^\s]+)`)
 
 func GetInfo(port string) (*Info, error) {
-	log.Println("MQTT boh")
-
+	
 	cmd := exec.Command("meshtastic-go", "--port", port, "info")
 	var out bytes.Buffer
 	cmd.Stdout = &out
