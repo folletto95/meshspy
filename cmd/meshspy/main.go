@@ -11,7 +11,6 @@ import (
 	"github.com/joho/godotenv" // ← aggiunto per leggere il file .env
 
 	"meshspy/config"
-	"meshspy/mqtt"
 	"meshspy/serial"
 	"meshspy/client"
 )
