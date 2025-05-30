@@ -38,6 +38,7 @@ COPY . .
 
 # Copia il file .env.runtime
 COPY .env.runtime ./
+ENV ENV_FILE_PATH=/app/.env.runtime
 COPY .env.example ./
 
 # ✅ COMPILA meshspy
