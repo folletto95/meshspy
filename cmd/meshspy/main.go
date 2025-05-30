@@ -13,7 +13,7 @@ import (
 	"meshspy/config"
 	"meshspy/mqtt"
 	"meshspy/serial"
-	//"meshspy/client"
+	"meshspy/client"
 )
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
     // 📡 Stampa info da meshtastic-go (se disponibile)
-	info, err := client.GetInfo(cfg.SerialPort)
+	info, err := meshclient.GetInfo(cfg.SerialPort)
 	if err != nil {
 		log.Printf("⚠️ Errore ottenimento info meshtastic-go: %v", err)
 	} else {
