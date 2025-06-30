@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Carica variabili da .env se presente xx
+# Carica variabili da .env se presente x
 if [[ -f .env.build ]]; then
   source .env.build
 fi
