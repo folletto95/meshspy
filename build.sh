@@ -55,7 +55,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
   echo "📦 Compilazione .proto in un unico container…"
   docker run --rm \
     -v "$PWD":/app \
-    -v /tmp:/tmp \
+    -v "$PWD/.proto_copy":/proto_copy \
     -w /app \
     golang:1.21-bullseye bash -c '
       set -e
