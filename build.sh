@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Carica variabili da .env se presente x
+# Carica variabili da .env se presente xxxxxxxxxxx
 if [[ -f .env.build ]]; then
   source .env.build
 fi
@@ -11,6 +11,8 @@ if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
   echo "$DOCKER_PASSWORD" | docker login docker.io \
     --username "$DOCKER_USERNAME" --password-stdin
 fi
+
+
 
 # Parametri
 IMAGE="${IMAGE:-nicbad/meshspy}"
