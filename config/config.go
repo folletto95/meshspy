@@ -3,9 +3,7 @@ package config
 import (
 	"log"
 	"os"
-	"strconv"
-
-	"github.com/joho/godotenv"
+	"strconv"	
 )
 
 type Config struct {
@@ -20,8 +18,7 @@ type Config struct {
 }
 
 func Load() Config {
-	_ = godotenv.Load(".env.runtime")
-
+	
 	baud, err := strconv.Atoi(getEnv("BAUD_RATE", "115200"))
 	if err != nil {
 		log.Fatalf("Invalid BAUD_RATE: %v", err)

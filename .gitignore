@@ -4,4 +4,3 @@ OLD_proto/
 .env.build
 .git
 .gitignore
-go.*
