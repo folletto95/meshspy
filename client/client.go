@@ -4,11 +4,15 @@ import (
 	"bufio"
 	"bytes"
 	//"log"
+	"encoding/json"
+	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
-	"strings"
-	"fmt"
+	//"strings"
+	//"fmt"
 	"strconv"
+	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"meshspy/config"
@@ -137,7 +141,7 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 		}
 	}
 
-		return node, nil
+	return node, nil
 }
 
 // ConnectMQTT crea e restituisce un client MQTT connesso
@@ -155,4 +159,17 @@ func ConnectMQTT(cfg config.Config) (mqtt.Client, error) {
 	token := client.Connect()
 	token.Wait()
 	return client, token.Error()
+}
+
+// SaveNodeInfo serializes NodeInfo to a JSON file
+func SaveNodeInfo(info *NodeInfo, path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	return enc.Encode(info)
 }

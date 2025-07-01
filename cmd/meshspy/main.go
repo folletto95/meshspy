@@ -11,9 +11,10 @@ import (
 
 	"github.com/joho/godotenv" // ← aggiunto per leggere il file .env
 
+	"meshspy/client"
 	"meshspy/config"
 	"meshspy/serial"
-	"meshspy/client"
+	
 )
 
 func main() {
@@ -45,9 +46,21 @@ func main() {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("⚠️ Errore ottenimento info meshtastic-go: %v", err)
+		if len(output) > 0 {
+			log.Printf("Output meshtastic-go:\n%s", string(output))
+		}
 	} else {
 		fmt.Printf("ℹ️  Info dispositivo Meshtastic:\n%s\n", output)
 	}
+
+	if info, err := mqtt.GetLocalNodeInfo(cfg.SerialPort); err == nil {
+		if err := mqtt.SaveNodeInfo(info, "nodes.json"); err != nil {
+			log.Printf("⚠️ Salvataggio info nodo fallito: %v", err)
+		}
+	} else {
+		log.Printf("⚠️ Lettura info nodo fallita: %v", err)
+	}
+	
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
