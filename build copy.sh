@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Carica variabili da .env se presente  
+# Carica variabili da .env se presente xxxxxxxxxxx
 if [[ -f .env.build ]]; then
   source .env.build
 fi
 
-# Login automatico se configurato  
+# Login automatico se configurato
 if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
   echo "$DOCKER_PASSWORD" | docker login docker.io \
     --username "$DOCKER_USERNAME" --password-stdin
 fi
 
-# Parametri  
+
+
+# Parametri
 IMAGE="${IMAGE:-nicbad/meshspy}"
 TAG="${TAG:-latest}"
 
+# Architetture separate
 ARCH_ARMV6="linux/arm/v6"
 PLATFORMS_PARALLEL="linux/arm/v7,linux/amd64,linux/386,linux/arm64"
 
@@ -49,7 +52,7 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   rm -rf "$TMP_DIR"
 done
 
-# Compilazione dei proto  
+# Compilazione dei proto
 if [[ -s "$PROTO_MAP_FILE" ]]; then
   echo "📦 Compilazione .proto in un unico container…"
   docker run --rm \
@@ -80,19 +83,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
   rm -f "$PROTO_MAP_FILE"
 fi
 
-# ─── Download automatico di meshtastic-go ─────────────────────────────────────
-MESHTASTIC_GO_VERSION="${MESHTASTIC_GO_VERSION:-v0.9.0}"
-echo "📥 Scaricando meshtastic-go ${MESHTASTIC_GO_VERSION}…"
-rm -rf meshtastic-go-bin
-mkdir -p meshtastic-go-bin
-wget -qO meshtastic-go-bin/meshtastic-go.tar.gz \
-     https://github.com/meshtastic/meshtastic-go/releases/download/${MESHTASTIC_GO_VERSION}/meshtastic-go_${MESHTASTIC_GO_VERSION}_linux_amd64.tar.gz
-tar -xzf meshtastic-go-bin/meshtastic-go.tar.gz -C meshtastic-go-bin
-chmod +x meshtastic-go-bin/meshtastic-go
-echo "✔️ meshtastic-go scaricato in meshtastic-go-bin/meshtastic-go"
-# ───────────────────────────────────────────────────────────────────────────────
-
-# Verifica o rigenera go.mod  
+# Verifica o rigenera go.mod
 REQUIRES_GO=$(grep '^go [0-9]\.' go.mod 2>/dev/null | cut -d' ' -f2 || echo "")
 if [[ ! -f go.mod || "$REQUIRES_GO" != "1.21" ]]; then
   echo "🛠 Generating or fixing go.mod and go.sum…"
@@ -105,14 +96,14 @@ if [[ ! -f go.mod || "$REQUIRES_GO" != "1.21" ]]; then
       go mod tidy"
 fi
 
-# Setup buildx  
+# Setup buildx
 if ! docker buildx inspect meshspy-builder &>/dev/null; then
   docker buildx create --name meshspy-builder --use
 fi
 docker buildx use meshspy-builder
 docker buildx inspect --bootstrap
 
-# 🔨 Build ARMv6 separata  
+# 🔨 Build ARMv6 separata (buildx fallback per piattaforme legacy)
 echo "🐹 Build ARMv6 senza buildx (solo se host ARM compatibile)"
 docker buildx build \
   --platform ${ARCH_ARMV6} \
@@ -121,18 +112,18 @@ docker buildx build \
   --build-arg GOARCH=arm \
   --build-arg GOARM=6 \
   --build-arg BASE_IMAGE=arm32v6/golang:1.21.0-alpine \
-  . 
+  .
 
-# 🚀 Build multipiattaforma  
+# 🚀 Build multipiattaforma per le altre architetture
 echo "🚀 Build & push multipiattaforma per: ${PLATFORMS_PARALLEL}"
 docker buildx build \
   --platform "${PLATFORMS_PARALLEL}" \
   --push \
   -t "${IMAGE}:${TAG}" \
   --build-arg BASE_IMAGE=golang:1.21-bullseye \
-  . 
+  .
 
-# 🔗 Unione ARMv6 nel manifest principale  
+# 🔗 Unione ARMv6 nel manifest principale
 echo "🔗 Creazione manifest multipiattaforma completo (facoltativo)"
 docker manifest create "${IMAGE}:${TAG}" \
   "${IMAGE}:${TAG}-armv6" \
