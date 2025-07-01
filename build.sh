@@ -88,12 +88,13 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
 fi
 
 # ─── Download automatico di meshtastic-go ─────────────────────────────────────
-MESHTASTIC_GO_VERSION="${MESHTASTIC_GO_VERSION:-v0.9.0}"
+MESHTASTIC_GO_VERSION="${MESHTASTIC_GO_VERSION:-v0.2.4}"
+MESHTASTIC_GO_REPO="lmatte7/meshtastic-go"   # fork corretto
 echo "📥 Scaricando meshtastic-go ${MESHTASTIC_GO_VERSION}…"
 rm -rf meshtastic-go-bin && mkdir -p meshtastic-go-bin
 
 RETRY_FLAGS="--tries=3 --retry-connrefused --timeout=30"
-URL="https://github.com/meshtastic/meshtastic-go/releases/download/${MESHTASTIC_GO_VERSION}/meshtastic-go_${MESHTASTIC_GO_VERSION}_linux_amd64.tar.gz"
+URL="https://github.com/${MESHTASTIC_GO_REPO}/releases/download/${MESHTASTIC_GO_VERSION}/meshtastic_go_linux_amd64"
 
 if wget $RETRY_FLAGS -qO meshtastic-go-bin/meshtastic-go.tar.gz "$URL"; then
   tar -xzf meshtastic-go-bin/meshtastic-go.tar.gz -C meshtastic-go-bin \
