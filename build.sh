@@ -87,24 +87,34 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
   rm -f "$PROTO_MAP_FILE"
 fi
 
-# ─── Download automatico di meshtastic-go ─────────────────────────────────────
+# ─── Download automatico di meshtastic-go multi-arch ───────────────────────────
 MESHTASTIC_GO_VERSION="${MESHTASTIC_GO_VERSION:-v0.2.4}"
 MESHTASTIC_GO_REPO="lmatte7/meshtastic-go"   # fork corretto
-echo "📥 Scaricando meshtastic-go ${MESHTASTIC_GO_VERSION}…"
+echo "📥 Scaricando meshtastic-go ${MESHTASTIC_GO_VERSION} per più architetture…"
+
+# architetture corrispondenti ai release asset su GitHub
+ARCHS=(amd64 arm arm64)
+
+# preparazione cartella
 rm -rf meshtastic-go-bin && mkdir -p meshtastic-go-bin
 
 RETRY_FLAGS="--tries=3 --retry-connrefused --timeout=30"
-URL="https://github.com/${MESHTASTIC_GO_REPO}/releases/download/${MESHTASTIC_GO_VERSION}/meshtastic_go_linux_amd64"
+for ARCH in "${ARCHS[@]}"; do
+  FILENAME="meshtastic_go_linux_${ARCH}"
+  URL="https://github.com/${MESHTASTIC_GO_REPO}/releases/download/${MESHTASTIC_GO_VERSION}/${FILENAME}"
+  OUT_DIR="meshtastic-go-bin/${ARCH}"
+  OUT_BIN="${OUT_DIR}/meshtastic-go"
 
-if wget $RETRY_FLAGS -qO meshtastic-go-bin/meshtastic-go.tar.gz "$URL"; then
-  tar -xzf meshtastic-go-bin/meshtastic-go.tar.gz -C meshtastic-go-bin \
-    && chmod +x meshtastic-go-bin/meshtastic-go \
-    && rm meshtastic-go-bin/meshtastic-go.tar.gz
-  echo "✔️ meshtastic-go scaricato in meshtastic-go-bin/meshtastic-go"
-else
-  echo "❌ Errore: impossibile scaricare meshtastic-go da $URL" >&2
-  exit 1
-fi
+  echo "👉 ${ARCH}: scarico da $URL"
+  mkdir -p "$OUT_DIR"
+  if wget $RETRY_FLAGS -qO "$OUT_BIN" "$URL"; then
+    chmod +x "$OUT_BIN"
+    echo "✔️ meshtastic-go (${ARCH}) salvato in $OUT_BIN"
+  else
+    echo "❌ Errore: impossibile scaricare ${FILENAME}" >&2
+    exit 1
+  fi
+done
 # ───────────────────────────────────────────────────────────────────────────────
 
 # Verifica o rigenera go.mod  
