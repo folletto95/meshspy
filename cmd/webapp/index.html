@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MeshSpy Messages</title>
+<style>
+#messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 5px; }
+</style>
+</head>
+<body>
+<h1>MeshSpy Messages</h1>
+<div id="messages"></div>
+<form id="form">
+  <input id="text" autocomplete="off" placeholder="Type a message"/>
+  <button>Send</button>
+</form>
+<script>
+const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+ws.onmessage = (ev) => {
+  const msgEl = document.createElement("div");
+  msgEl.textContent = ev.data;
+  document.getElementById("messages").appendChild(msgEl);
+};
+
+document.getElementById("form").onsubmit = (ev) => {
+  ev.preventDefault();
+  const text = document.getElementById("text");
+  ws.send(text.value);
+  text.value = "";
+};
+</script>
+</body>
+</html>
