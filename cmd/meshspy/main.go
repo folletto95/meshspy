@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
+const welcomeMessage = "Ciao da MeshSpy, presto (spero) per tutti"
 
 func main() {
 	log.Println("🔥 MeshSpy avviamento iniziato...")
@@ -46,10 +48,27 @@ func main() {
 
 	// Sottoscrivi al topic dei comandi e inoltra i messaggi sulla seriale
 	token := client.Subscribe(cfg.CommandTopic, 0, func(c paho.Client, m paho.Message) {
-		if err := serial.SendText(cfg.SerialPort, string(m.Payload())); err != nil {
-			log.Printf("❌ Errore invio seriale: %v", err)
-		} else {
-			log.Printf("➡️  Comando inoltrato alla seriale: %s", m.Payload())
+				msg := string(m.Payload())
+		switch {
+		case msg == "sendhello":
+			if err := mqttpkg.SendTextMessage(cfg.SerialPort, welcomeMessage); err != nil {
+				log.Printf("❌ Errore invio messaggio standard: %v", err)
+			} else {
+				log.Printf("✅ Messaggio standard inviato")
+			}
+		case strings.HasPrefix(msg, "send:"):
+			text := strings.TrimPrefix(msg, "send:")
+			if err := mqttpkg.SendTextMessage(cfg.SerialPort, text); err != nil {
+				log.Printf("❌ Errore invio messaggio personalizzato: %v", err)
+			} else {
+				log.Printf("✅ Messaggio personalizzato inviato: %s", text)
+			}
+		default:
+			if err := serial.Send(cfg.SerialPort, cfg.BaudRate, msg); err != nil {
+				log.Printf("❌ Errore invio seriale: %v", err)
+			} else {
+				log.Printf("➡️  Comando inoltrato alla seriale: %s", m.Payload())
+			}
 		}
 	})
 	token.Wait()
@@ -88,6 +107,11 @@ func main() {
 			log.Printf("⚠️ Esportazione configurazione fallita: %v", err)
 		} else {
 			log.Printf("✅ Configurazione salvata in %s", cfgFile)
+		}
+				if err := mqttpkg.SendTextMessage(cfg.SerialPort, welcomeMessage); err != nil {
+			log.Printf("⚠️ Errore invio messaggio di benvenuto: %v", err)
+		} else {
+			log.Printf("✅ Messaggio di benvenuto inviato")
 		}
 	} else {
 		log.Printf("⚠️ Lettura info nodo fallita: %v", err)
