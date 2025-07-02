@@ -9,6 +9,9 @@ require (
 	//github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	go.bug.st/serial v1.6.4
 )
+
+require github.com/mattn/go-sqlite3 v1.14.28
+
 require github.com/creack/goselect v0.1.2 // indirect
 
 require (

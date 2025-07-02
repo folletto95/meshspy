@@ -4,18 +4,21 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"sync"
+
+	"meshspy/storage"
 )
 
 type server struct {
-	mu       sync.Mutex
-	messages []string
-	tmpl     *template.Template
+	mu    sync.Mutex
+	store *storage.Store
+	tmpl  *template.Template
 }
 
-func newServer() *server {
+func newServer(store *storage.Store) *server {
 	tmpl := template.Must(template.New("index").Parse(indexHTML))
-	return &server{tmpl: tmpl}
+	return &server{tmpl: tmpl, store: store}
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -24,18 +27,20 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err == nil {
 			msg := r.Form.Get("msg")
 			if msg != "" {
-				s.mu.Lock()
-				s.messages = append(s.messages, msg)
-				s.mu.Unlock()
+				if err := s.store.Add(msg); err != nil {
+					log.Printf("store add: %v", err)
+				}
 			}
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
-	s.mu.Lock()
-	data := struct{ Messages []string }{append([]string(nil), s.messages...)}
-	s.mu.Unlock()
+	msgs, err := s.store.List()
+	if err != nil {
+		log.Printf("store list: %v", err)
+	}
+	data := struct{ Messages []string }{Messages: msgs}
 	if err := s.tmpl.Execute(w, data); err != nil {
 		log.Printf("template execute: %v", err)
 	}
@@ -60,7 +65,17 @@ const indexHTML = `<!DOCTYPE html>
 </html>`
 
 func main() {
-	srv := newServer()
+	dbPath := os.Getenv("MSG_DB_PATH")
+	if dbPath == "" {
+		dbPath = "messages.db"
+	}
+	store, err := storage.New(dbPath)
+	if err != nil {
+		log.Fatalf("open db: %v", err)
+	}
+	defer store.Close()
+
+	srv := newServer(store)
 	http.HandleFunc("/", srv.handleIndex)
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
