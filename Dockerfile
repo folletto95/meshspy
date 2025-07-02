@@ -44,7 +44,7 @@ RUN GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
 RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
     && cd /tmp/meshtastic-go \
        && GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
-       go build -ldflags="-s -w" -o /usr/local/bin/meshtastic-go \
+       && go build -ldflags="-s -w" -o /usr/local/bin/meshtastic-go \
        && chmod +x /usr/local/bin/meshtastic-go
 
 ###########################
