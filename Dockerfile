@@ -37,13 +37,15 @@ RUN go mod download
 COPY . .
 
 # ✅ COMPILA meshspy
-RUN go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
+RUN GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
+    go build -ldflags="-s -w" -o meshspy ./cmd/meshspyù
 
 # ✅ CLONA E COMPILA meshtastic-go
 RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
     && cd /tmp/meshtastic-go \
-    && go build -ldflags="-s -w" -o /usr/local/bin/meshtastic-go \
-    && chmod +x /usr/local/bin/meshtastic-go
+       && GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
+       go build -ldflags="-s -w" -o /usr/local/bin/meshtastic-go \
+       && chmod +x /usr/local/bin/meshtastic-go
 
 ###########################
 # 🏁 STAGE: Runtime finale
