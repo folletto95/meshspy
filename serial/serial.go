@@ -89,3 +89,13 @@ func parseNodeName(line string) string {
 	}
 	return ""
 }
+// Send apre la porta seriale, invia i dati e chiude la porta.
+func Send(portName string, baud int, data string) error {
+	port, err := serial.Open(portName, &serial.Mode{BaudRate: baud})
+	if err != nil {
+		return err
+	}
+	defer port.Close()
+	_, err = port.Write([]byte(data))
+	return err
+}

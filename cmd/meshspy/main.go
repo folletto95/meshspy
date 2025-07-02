@@ -38,7 +38,7 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
-	if err := mqtt.PublishAlive(client, cfg.MQTTTopic); err != nil {
+	if err := mqttpkg.PublishAlive(client, cfg.MQTTTopic); err != nil {
 		log.Printf("⚠️  Errore invio messaggio Alive: %v", err)
 	} else {
 		log.Printf("✅ Messaggio di test inviato su '%s'", cfg.MQTTTopic)
@@ -82,6 +82,12 @@ func main() {
 	if info, err := mqttpkg.GetLocalNodeInfo(cfg.SerialPort); err == nil {
 		if err := mqttpkg.SaveNodeInfo(info, "nodes.json"); err != nil {
 			log.Printf("⚠️ Salvataggio info nodo fallito: %v", err)
+		}
+				cfgFile := mqttpkg.BuildConfigFilename(info)
+		if err := mqttpkg.ExportConfig(cfg.SerialPort, cfgFile); err != nil {
+			log.Printf("⚠️ Esportazione configurazione fallita: %v", err)
+		} else {
+			log.Printf("✅ Configurazione salvata in %s", cfgFile)
 		}
 	} else {
 		log.Printf("⚠️ Lettura info nodo fallita: %v", err)
