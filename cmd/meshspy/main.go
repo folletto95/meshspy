@@ -36,6 +36,12 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
+	if err := mqtt.PublishAlive(client, cfg.MQTTTopic); err != nil {
+		log.Printf("⚠️  Errore invio messaggio Alive: %v", err)
+	} else {
+		log.Printf("✅ Messaggio di test inviato su '%s'", cfg.MQTTTopic)
+	}
+
 	// Inizializza il canale di uscita per la gestione dei segnali di terminazione
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)

@@ -38,7 +38,9 @@ docker run --device=/dev/ttyACM0 \
 ```
 
 During start-up the service prints information from `meshtastic-go` and begins
-streaming data from the serial port to the configured MQTT topic.
+streaming data from the serial port to the configured MQTT topic. It also
+sends a `MeshSpy Alive` message on the configured MQTT topic so other
+components can detect that the service is running.
 
 ## Web Application
 
@@ -52,6 +54,18 @@ go run ./cmd/webapp
 The application reads the same `.env.runtime` file used by `meshspy`. Set
 `WEB_PORT` to change the listening port (default `8080`) and open your browser
 to `http://localhost:8080`.
+
+## Simple Message Board
+
+For a minimal example that does not rely on MQTT, a tiny in-memory
+message board is available in `cmd/messagesapp`:
+
+```bash
+go run ./cmd/messagesapp
+```
+
+Visit `http://localhost:8080` and post messages through the form to see
+them listed on the page.
 
 ## License
 
