@@ -41,6 +41,7 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	// 📡 Stampa info da meshtastic-go (se disponibile)
+	time.Sleep(time.Second)
 	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", cfg.SerialPort, "info")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
