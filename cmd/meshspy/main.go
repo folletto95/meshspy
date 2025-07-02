@@ -24,7 +24,7 @@ func main() {
 		log.Printf("⚠️  Nessun file .env.runtime trovato o errore di caricamento: %v", err)
 	}
 
-	log.Println("🚀 MeshSpy avviato con successo! Inizializzazione in corso...")
+	log.Println("🚀 MeshSpy avviato con successo! Inizializzazione in corso..")
 
 	// Carica la configurazione dalle variabili d'ambiente
 	cfg := config.Load()
@@ -32,8 +32,7 @@ func main() {
 	// Connessione al broker MQTT
 	client, err := mqtt.ConnectMQTT(cfg)
 	if err != nil {
-		log.Fatalf("❌ Errore connessione MQ
-		TT: %v", err)
+		log.Fatalf("❌ Errore connessione MQTT: %v", err)
 	}
 	defer client.Disconnect(250)
 
