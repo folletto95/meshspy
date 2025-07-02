@@ -32,7 +32,8 @@ func main() {
 	// Connessione al broker MQTT
 	client, err := mqtt.ConnectMQTT(cfg)
 	if err != nil {
-		log.Fatalf("❌ Errore connessione MQTT: %v", err)
+		log.Fatalf("❌ Errore connessione MQ
+		TT: %v", err)
 	}
 	defer client.Disconnect(250)
 
