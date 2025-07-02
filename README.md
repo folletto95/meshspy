@@ -39,6 +39,20 @@ docker run --device=/dev/ttyACM0 \
 
 During start-up the service prints information from `meshtastic-go` and begins
 streaming data from the serial port to the configured MQTT topic.
+
+## Web Application
+
+A simple web interface lives in `cmd/webapp`. It serves an HTML page and
+forwards MQTT messages over WebSockets. Run it with Go:
+
+```bash
+go run ./cmd/webapp
+```
+
+The application reads the same `.env.runtime` file used by `meshspy`. Set
+`WEB_PORT` to change the listening port (default `8080`) and open your browser
+to `http://localhost:8080`.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
