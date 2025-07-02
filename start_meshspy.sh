@@ -70,6 +70,6 @@ if [ "$LOG" = true ]; then
   while true; do
     echo "---------- $(date +'%Y-%m-%d %H:%M:%S') ----------"
     docker logs --tail 50 ${CONTAINER_NAME}
-    sleep 60
+    sleep 30
   done
 fi
