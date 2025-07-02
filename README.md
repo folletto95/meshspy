@@ -39,3 +39,6 @@ docker run --device=/dev/ttyACM0 \
 
 During start-up the service prints information from `meshtastic-go` and begins
 streaming data from the serial port to the configured MQTT topic.
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

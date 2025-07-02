@@ -40,8 +40,13 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
+	// 📡 Attende la disponibilità della porta seriale prima di eseguire meshtastic-go
+	if err := serial.WaitForSerial(cfg.SerialPort, 30*time.Second); err != nil {
+		log.Fatalf("❌ Porta seriale %s non disponibile: %v", cfg.SerialPort, err)
+	}
+
 	// 📡 Stampa info da meshtastic-go (se disponibile)
-	//time.Sleep(time.Second)
+
 	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", cfg.SerialPort, "info")
 	output, err := cmd.CombinedOutput()
 	if err != nil {

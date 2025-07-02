@@ -49,10 +49,10 @@ type NodeInfo struct {
 }
 
 // Espressioni regolari
-var (
-	nameRe = regexp.MustCompile(`long_name:"([^"]+)"`)
-	fwRe   = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
-)
+//var (
+//	nameRe = regexp.MustCompile(`long_name:"([^"]+)"`)
+//	fwRe   = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
+//)
 
 // GetLocalNodeInfo esegue meshtastic-go e recupera i dati dal primo nodo dopo "Radio Settings:"
 func GetLocalNodeInfo(port string) (*NodeInfo, error) {
