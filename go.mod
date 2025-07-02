@@ -6,8 +6,10 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
-	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
+	//github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
+	go.bug.st/serial v1.6.4
 )
+require github.com/creack/goselect v0.1.2 // indirect
 
 require (
 	//github.com/gorilla/websocket v1.5.3 // indirect

@@ -176,3 +176,10 @@ func SaveNodeInfo(info *NodeInfo, path string) error {
 	enc.SetIndent("", "  ")
 	return enc.Encode(info)
 }
+
+// PublishAlive sends a simple \"MeshSpy Alive\" message to the given topic.
+func PublishAlive(client mqtt.Client, topic string) error {
+	token := client.Publish(topic, 0, false, []byte("MeshSpy Alive"))
+	token.Wait()
+	return token.Error()
+}

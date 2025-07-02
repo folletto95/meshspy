@@ -26,6 +26,17 @@ Then build the image:
 ./build.sh
 ```
 
+### Building binaries
+
+To produce standalone binaries for Linux, Windows and macOS, run:
+
+```bash
+./build-binaries.sh
+```
+
+The compiled executables will be placed in the `dist/` directory.
+
+
 ## Running
 
 Configure the runtime environment in `.env.runtime`. The most important
