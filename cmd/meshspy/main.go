@@ -14,8 +14,7 @@ import (
 	"meshspy/client"
 	"meshspy/config"
 	"meshspy/serial"
-	
-)
+	)
 
 func main() {
 	log.Println("🔥 MeshSpy avviamento iniziato...")
@@ -61,7 +60,6 @@ func main() {
 		log.Printf("⚠️ Lettura info nodo fallita: %v", err)
 	}
 	
-
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
 		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, func(data string) {

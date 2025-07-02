@@ -3,9 +3,9 @@ package config
 import (
 	"log"
 	"os"
-	"strconv"	
+	"strconv"
 )
-
+// Config holds the application configuration loaded from environment variables.
 type Config struct {
 	SerialPort string
 	BaudRate   int
@@ -17,6 +17,7 @@ type Config struct {
 	Debug      bool
 }
 
+// Load reads configuration values from the environment and returns a Config.
 func Load() Config {
 	
 	baud, err := strconv.Atoi(getEnv("BAUD_RATE", "115200"))

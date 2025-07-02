@@ -18,7 +18,7 @@ import (
 	"meshspy/config"
 )
 
-// Info rappresenta le informazioni estratte dal dispositivo Meshtastic
+// NodeInfo represents the information extracted from a Meshtastic device.
 type NodeInfo struct {
 	ID                string
 	LongName          string
