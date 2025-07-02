@@ -44,9 +44,9 @@ func main() {
 		log.Printf("✅ Messaggio di test inviato su '%s'", cfg.MQTTTopic)
 	}
 
-		// Sottoscrivi al topic dei comandi e inoltra i messaggi sulla seriale
+	// Sottoscrivi al topic dei comandi e inoltra i messaggi sulla seriale
 	token := client.Subscribe(cfg.CommandTopic, 0, func(c paho.Client, m paho.Message) {
-		if err := serial.Send(cfg.SerialPort, cfg.BaudRate, string(m.Payload())); err != nil {
+		if err := serial.SendText(cfg.SerialPort, string(m.Payload())); err != nil {
 			log.Printf("❌ Errore invio seriale: %v", err)
 		} else {
 			log.Printf("➡️  Comando inoltrato alla seriale: %s", m.Payload())
@@ -83,7 +83,7 @@ func main() {
 		if err := mqttpkg.SaveNodeInfo(info, "nodes.json"); err != nil {
 			log.Printf("⚠️ Salvataggio info nodo fallito: %v", err)
 		}
-				cfgFile := mqttpkg.BuildConfigFilename(info)
+		cfgFile := mqttpkg.BuildConfigFilename(info)
 		if err := mqttpkg.ExportConfig(cfg.SerialPort, cfgFile); err != nil {
 			log.Printf("⚠️ Esportazione configurazione fallita: %v", err)
 		} else {
