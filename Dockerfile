@@ -38,7 +38,7 @@ COPY . .
 
 # ✅ COMPILA meshspy
 RUN GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
-    go build -ldflags="-s -w" -o meshspy ./cmd/meshspyù
+    go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
 # ✅ CLONA E COMPILA meshtastic-go
 RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
