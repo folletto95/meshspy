@@ -14,7 +14,7 @@ import (
 	"meshspy/client"
 	"meshspy/config"
 	"meshspy/serial"
-	)
+)
 
 func main() {
 	log.Println("🔥 MeshSpy avviamento iniziato...")

@@ -1,3 +1,4 @@
+// Package config loads application settings from environment variables.
 package config
 
 import (
@@ -5,6 +6,7 @@ import (
 	"os"
 	"strconv"
 )
+
 // Config holds the application configuration loaded from environment variables.
 type Config struct {
 	SerialPort string

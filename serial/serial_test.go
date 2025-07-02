@@ -7,10 +7,12 @@ func TestParseNodeName(t *testing.T) {
 		line string
 		want string
 	}{
-		{"[INF] packet from=0x1a2b seq", "0x1a2b"},
-		{"random text from 0xABCD end", "0xABCD"},
-		{"node info from=0x0", "0x0"},
-		{"no node here", ""},
+		{"[INF] packet from=0x1a2b seq=1", "0x1a2b"},
+		{"[DBG] other from 0xABCD tail", "0xABCD"},
+		{"node status from=0x0", "0x0"},
+		{"prefix from=0xDEAD data from 0xBEEF", "0xDEAD"},
+		{"garbage log line", ""},
+		{"from=nothex", ""},
 	}
 	for _, tt := range tests {
 		if got := parseNodeName(tt.line); got != tt.want {

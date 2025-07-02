@@ -1,3 +1,4 @@
+// Package mqtt provides utilities to parse Meshtastic node information and publish it to an MQTT broker.
 package mqtt
 
 import (
