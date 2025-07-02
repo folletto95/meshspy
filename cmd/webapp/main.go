@@ -57,7 +57,7 @@ func main() {
 				log.Printf("websocket read error: %v", err)
 				break
 			}
-			t := client.Publish(cfg.MQTTTopic, 0, false, message)
+			t := client.Publish(cfg.CommandTopic, 0, false, message)
 			t.Wait()
 			if t.Error() != nil {
 				log.Printf("MQTT publish error: %v", t.Error())

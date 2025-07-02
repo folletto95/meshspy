@@ -11,9 +11,11 @@ import (
 
 	"github.com/joho/godotenv" // ← aggiunto per leggere il file .env
 
-	"meshspy/client"
+	mqttpkg "meshspy/client"
 	"meshspy/config"
 	"meshspy/serial"
+
+	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
 func main() {
@@ -30,7 +32,7 @@ func main() {
 	cfg := config.Load()
 
 	// Connessione al broker MQTT
-	client, err := mqtt.ConnectMQTT(cfg)
+	client, err := mqttpkg.ConnectMQTT(cfg)
 	if err != nil {
 		log.Fatalf("❌ Errore connessione MQTT: %v", err)
 	}
@@ -40,6 +42,19 @@ func main() {
 		log.Printf("⚠️  Errore invio messaggio Alive: %v", err)
 	} else {
 		log.Printf("✅ Messaggio di test inviato su '%s'", cfg.MQTTTopic)
+	}
+
+		// Sottoscrivi al topic dei comandi e inoltra i messaggi sulla seriale
+	token := client.Subscribe(cfg.CommandTopic, 0, func(c paho.Client, m paho.Message) {
+		if err := serial.Send(cfg.SerialPort, cfg.BaudRate, string(m.Payload())); err != nil {
+			log.Printf("❌ Errore invio seriale: %v", err)
+		} else {
+			log.Printf("➡️  Comando inoltrato alla seriale: %s", m.Payload())
+		}
+	})
+	token.Wait()
+	if token.Error() != nil {
+		log.Printf("⚠️  Errore sottoscrizione comandi: %v", token.Error())
 	}
 
 	// Inizializza il canale di uscita per la gestione dei segnali di terminazione
@@ -64,8 +79,8 @@ func main() {
 		fmt.Printf("ℹ️  Info dispositivo Meshtastic:\n%s\n", output)
 	}
 
-	if info, err := mqtt.GetLocalNodeInfo(cfg.SerialPort); err == nil {
-		if err := mqtt.SaveNodeInfo(info, "nodes.json"); err != nil {
+	if info, err := mqttpkg.GetLocalNodeInfo(cfg.SerialPort); err == nil {
+		if err := mqttpkg.SaveNodeInfo(info, "nodes.json"); err != nil {
 			log.Printf("⚠️ Salvataggio info nodo fallito: %v", err)
 		}
 	} else {
