@@ -49,9 +49,10 @@ docker run --device=/dev/ttyACM0 \
 ```
 
 During start-up the service prints information from `meshtastic-go` and begins
-streaming data from the serial port to the configured MQTT topic. It also
-sends a `MeshSpy Alive` message on the configured MQTT topic so other
-components can detect that the service is running.
+streaming data from the serial port to the configured MQTT topic. Optionally it
+can send a `MeshSpy Alive` message on the configured MQTT topic so other
+components can detect that the service is running. This behaviour is controlled
+by the `SEND_ALIVE_ON_START` variable (default `false`).
 
 ### `start_meshspy.sh` helper
 
@@ -65,6 +66,7 @@ container with some default environment variables:
 - `MQTT_CLIENT_ID=meshspy-kali`
 - `MQTT_USER=testmeshspy`
 - `MQTT_PASS=test1`
+- `SEND_ALIVE_ON_START=false`
 
 Start the container using the defaults:
 
