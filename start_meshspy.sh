@@ -40,7 +40,8 @@ if [ "$CLEAN" = true ]; then
 fi
 
 # Se il container esiste già, lo rimuoviamo
-if [ $(docker ps -a -q -f name=${CONTAINER_NAME}) ]; then
+CONTAINER_ID="$(docker ps -a -q -f name=${CONTAINER_NAME})"
+if [ -n "$CONTAINER_ID" ]; then
   echo "Rimuovo il container esistente '${CONTAINER_NAME}'..."
   docker rm -f ${CONTAINER_NAME}
 fi

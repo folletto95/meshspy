@@ -14,12 +14,16 @@ import (
 
 	mqttpkg "meshspy/client"
 	"meshspy/config"
+	"meshspy/nodemap"
 	"meshspy/serial"
 
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
-const welcomeMessage = "Ciao da MeshSpy, presto (spero) per tutti"
+const (
+	welcomeMessage = "Ciao da MeshSpy, presto (spero) per tutti"
+	aliveMessage   = "MeshSpy Alive"
+)
 
 func main() {
 	log.Println("🔥 MeshSpy avviamento iniziato...")
@@ -33,6 +37,7 @@ func main() {
 
 	// Carica la configurazione dalle variabili d'ambiente
 	cfg := config.Load()
+	nodes := nodemap.New()
 
 	// Connessione al broker MQTT
 	client, err := mqttpkg.ConnectMQTT(cfg)
@@ -41,10 +46,12 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
-	if err := mqttpkg.PublishAlive(client, cfg.MQTTTopic); err != nil {
-		log.Printf("⚠️  Errore invio messaggio Alive: %v", err)
-	} else {
-		log.Printf("✅ Messaggio di test inviato su '%s'", cfg.MQTTTopic)
+	if cfg.SendAlive {
+		if err := mqttpkg.PublishAlive(client, cfg.MQTTTopic); err != nil {
+			log.Printf("⚠️  Errore invio messaggio Alive: %v", err)
+		} else {
+			log.Printf("✅ Messaggio Alive inviato su '%s'", cfg.MQTTTopic)
+		}
 	}
 
 	// Sottoscrivi al topic dei comandi e inoltra i messaggi sulla seriale
@@ -86,6 +93,13 @@ func main() {
 		log.Fatalf("❌ Porta seriale %s non disponibile: %v", cfg.SerialPort, err)
 	}
 
+	// Invia un messaggio Alive anche al nodo appena la seriale è disponibile
+	if err := serial.SendTextMessage(cfg.SerialPort, aliveMessage); err != nil {
+		log.Printf("⚠️  Errore invio messaggio Alive al nodo: %v", err)
+	} else {
+		log.Printf("✅ Messaggio Alive inviato al nodo")
+	}
+
 	// 📡 Stampa info da meshtastic-go (se disponibile)
 
 	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", cfg.SerialPort, "info")
@@ -120,7 +134,7 @@ func main() {
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
-		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, func(data string) {
+		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, nodes, func(data string) {
 			// Pubblica ogni messaggio ricevuto sul topic MQTT
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()
