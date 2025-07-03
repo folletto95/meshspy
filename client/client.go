@@ -173,3 +173,17 @@ func SaveNodeInfo(info *NodeInfo, path string) error {
 	enc.SetIndent("", "  ")
 	return enc.Encode(info)
 }
+
+// SendText sends a text message to an optional destination using meshtastic-go
+func SendText(port, dest, msg string) error {
+	args := []string{"--port", port, "--sendtext", msg}
+	if dest != "" {
+		args = append(args, "--dest", dest)
+	}
+	cmd := exec.Command("/usr/local/bin/meshtastic-go", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("meshtastic-go failed: %v - %s", err, string(output))
+	}
+	return nil
+}
