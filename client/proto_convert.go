@@ -14,6 +14,7 @@ func NodeInfoFromProto(ni *latestpb.NodeInfo) *NodeInfo {
 	u := ni.GetUser()
 	info := &NodeInfo{
 		ID:        fmt.Sprintf("0x%x", ni.GetNum()),
+		Num:       ni.GetNum(),
 		LongName:  u.GetLongName(),
 		ShortName: u.GetShortName(),
 		MacAddr:   fmt.Sprintf("%x", u.GetMacaddr()),

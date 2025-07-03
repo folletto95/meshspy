@@ -24,6 +24,9 @@ func TestNodeInfoFromProto(t *testing.T) {
 	if info == nil {
 		t.Fatal("nil info")
 	}
+	if info.Num != 0x12 {
+		t.Fatalf("num=%d", info.Num)
+	}
 	if info.Snr != 7.5 {
 		t.Fatalf("snr=%v", info.Snr)
 	}

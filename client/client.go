@@ -23,6 +23,7 @@ import (
 // NodeInfo represents the information extracted from a Meshtastic device.
 type NodeInfo struct {
 	ID                    string
+	Num                   uint32
 	LongName              string
 	ShortName             string
 	MacAddr               string

@@ -132,8 +132,19 @@ func main() {
 		if err := mqttpkg.SaveNodeInfo(info, "nodes.json"); err != nil {
 			log.Printf("⚠️ Salvataggio info nodo fallito: %v", err)
 		}
+		nodes.Update(info.Num, info.LongName, info.ShortName)
 		if err := nodeStore.Upsert(info); err != nil {
 			log.Printf("⚠️ aggiornamento db nodi: %v", err)
+		}
+		if nodesList, err := mqttpkg.GetMeshNodes(cfg.SerialPort); err == nil {
+			for _, n := range nodesList {
+				nodes.Update(n.Num, n.LongName, n.ShortName)
+				if err := nodeStore.Upsert(n); err != nil {
+					log.Printf("⚠️ aggiornamento db nodi: %v", err)
+				}
+			}
+		} else {
+			log.Printf("⚠️ lettura nodi: %v", err)
 		}
 		cfgFile := mqttpkg.BuildConfigFilename(info)
 		if err := mqttpkg.ExportConfig(cfg.SerialPort, cfgFile); err != nil {
