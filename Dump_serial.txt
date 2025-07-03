@@ -1,0 +1,78 @@
+┌──(kali㉿kali)-[~/meshspy]
+└─$ bash start_meshspy.sh --clean --log
+Pulizia immagine Docker: rimozione di nicbad/meshspy:latest...
+Untagged: nicbad/meshspy:latest
+Untagged: nicbad/meshspy@sha256:76df36fccc2603d2dcb41e8e25e99e2b4bd90e1fe53b813625d434b8724a4298
+Deleted: sha256:c7d4aa4a778b95b8617c2f0a94bac35bce26ef81268ff7bd21cce24ddaf9733d
+Pull immagine Docker: scarico nicbad/meshspy:latest...
+latest: Pulling from nicbad/meshspy
+44cf07d57ee4: Already exists 
+8bc88d092712: Already exists 
+16e6e6854762: Already exists 
+1916f74bc885: Already exists 
+4f4fb700ef54: Already exists 
+6545905d0a9f: Already exists 
+1d1d10bb9657: Already exists 
+Digest: sha256:76df36fccc2603d2dcb41e8e25e99e2b4bd90e1fe53b813625d434b8724a4298
+Status: Downloaded newer image for nicbad/meshspy:latest
+docker.io/nicbad/meshspy:latest
+Rimuovo il container esistente 'meshspy'...
+meshspy
+Avvio del container 'meshspy'...
+1f5cec49d31c928ea67ed8e63327c2c5815de7092c445b750c017dff74e09101
+Container 'meshspy' avviato con successo.                                                                                                                  
+Avvio monitoraggio log del container ogni minuto. Premi Ctrl+C per interrompere.                                                                           
+---------- 2025-07-03 05:32:56 ----------                                                                                                                  
+2025/07/03 09:32:56 🔥 MeshSpy avviamento iniziato...                                                                                                      
+2025/07/03 09:32:56 🚀 MeshSpy avviato con successo! Inizializzazione in corso..                                                                           
+---------- 2025-07-03 05:33:26 ----------                                                                                                                  
+| 863490340      | M.te Orsa 🇮🇹   | N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                              
+| 861940812      | Spritz_Aperol_Mobile_3| N/A            | N/A            |                                                                                N/A            | N/A            | |                                                                                                                       
+| 3663519744     | IZ3VEI-13_e000 | N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                              
+| 4229529044     | Audi           | N/A            | 917            | 453246                                                                               976      | 75235328       |                                                                                                                                
+| 2697753368     | RSAL           | N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                              
+| 861939364      | Rio Saliceto 2 | N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                              
+| 1819549880     | iw0rdv SPELLO  | N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                              
+| 542851008      | Eupilio        | N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                              
+| 547673024      | Salice_Terme_ d3c0| N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                           
+| 2224786740     | Knt_Magliolo_GW_868_8d34| N/A            | N/A                                                                                           | N/A            | N/A            | |                                                                                                                     
+| 2697670208     | RG4Tech YouTube Channel| N/A            | N/A                                                                                           | N/A            | N/A            | |                                                                                                                      
+| 621113192      | IT9IDU 🌋 (MQTT)| N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                             
+| 2697733196     | FlashNoob98 (MQTT)| N/A            | 56             | 408                                                                               338432      | 143409152      |                                                                                                                             
+| 1129805448     | IU1MPF heltec 1| N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                              
+| 1977641408     | Moncalieri Ponzy 2.5.18| N/A            | N/A                                                                                           | N/A            | N/A            | |                                                                                                                      
+| 3071142376     | HB9GFG-8 Tremona 🇨🇭| N/A            | N/A            | N/                                                                               A            | N/A            | |                                                                                                                          
+| 2224777516     | Loskindividuo Roof| N/A            | 20             | 419                                                                               086336      | 124665856      |                                                                                                                             
+| 3341939288     | Pitocca-RPT    | N/A            | N/A            | N/A                                                                                           | N/A            | |                                                                                                                              
+| 2956772000     | Matte-Mob0     | 101            | 0              | 439054                                                                               189      | 107734331      |                                                                                                                                
+| 4016267858     | GRU-SM_RPT     | N/A            | 35             | 448336169      | 110194330      |
+| 808614732      | Preziosissimo Zavaglio 🔩| 101            | 0              | 445236000      | 113384000      |
+| 116759428      | Nicco-Mob2 🚀   | 101            | 0              | 436837909      | 104839021      |
+| 2031810469     | XARC-RPT3      | 85             | 1840           | 441277429      | 107954779      |
+| 3139505583     | Test_pisa      | 11             | 0              | 437148882      | 104050543      |
+| 409969204      | Nicco-Poggi    | 101            | N/A            | N/A            | N/A            | |
+| 1127978668     | Nicco-Pisa     | 101            | N/A            | N/A            | N/A            | |
+| 2933843888     | RADIO PICO PALACE| N/A            | 30             | 448892358      | 110526280      |
+| 3806454192     | MIA SUOCERA_GW | 101            | 22             | 448391400      | 110670890      |
+| 1806845349     | XArcana_RPT_868| N/A            | N/A            | N/A            | N/A            | |
+=========================================================================================================================================================================================
+
+Channel Settings:
+=========================================================================================================================================================================================
+| Name           | Index          | Uplink    | Downlink  | Role           | Precision      | PSK                                                                                       |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Default        | 0              | True      | True      | PRIMARY        | 14             | "\x01"                                                                                    |
+| Pisa           | 1              | True      | True      | SECONDARY      | 32             | "Zk\x04\x9c\x12Sm\xea\x8598\"\xefפ\"\uf75a\x98\xfe\xdb=HH\x17\xcf\xfc\x81\xf3."           |
+| Poggi          | 2              | True      | True      | SECONDARY      | 32             | "@\xd3WK\x93Q\x8c\x0ea\x98fH\x14V\x81F\x9fU\xc7_\xa5\xf1\x1eQ\x9bTA\x13i\x99\xe1~"        |
+| Toscana        | 3              | True      | True      | SECONDARY      | 14             | "\x15Sm\x11)o\x8d\xca^\xaf\x84\xe63;x\x06\xe2\xfd\xbb\xc8V\x8f\x89kN𬑎\xa0y"               |
+=========================================================================================================================================================================================
+Primary Channel URL:     https://www.meshtastic.org/c/#EgEBKAEwAToCCA4
+Full Channel URL:        https://www.meshtastic.org/c/#CgsSAQEoATABOgIIDgowEiBaawScElNt6oU5OCLv16Qi750Kmpj-2z1ISBfP_IHzLhoEUGlzYSgBMAE6AgggCjESIEDTV0uTUYwOYZhmSBRWgUafVcdfpfEeUZtUQRNpmeF-GgVQb2dnaSgBMAE6AgggCjMSIBVTbREpb43KXq-E5jM7eAbi_bvIVo-Ja07wrJEKjqB5GgdUb3NjYW5hKAEwAToCCA4
+
+2025/07/03 09:33:24 ✅ Configurazione salvata in Nicco-T114-🧪--2.7.0.195b7cc-20250703.txt
+2025/07/03 09:33:24 ✅ Messaggio di benvenuto inviato
+2025/07/03 09:33:24 Listening on serial /dev/ttyACM0 at 115200 baud
+2025/07/03 09:33:25 [DEBUG serial] "\x94\xc3\x00J2H\n"
+2025/07/03 09:33:25 [DEBUG parse] no node found in "\x94\xc3\x00J2H\n"
+2025/07/03 09:33:25 [DEBUG serial] "8Battery: usbPower=0, isCharging=0, batMv=4098, batPct=93\x15\xa3jfh\x1a\x05Power \n"
+2025/07/03 09:33:25 [DEBUG parse] no node found in "8Battery: usbPower=0, isCharging=0, batMv=4098, batPct=93\x15\xa3jfh\x1a\x05Power \n"
