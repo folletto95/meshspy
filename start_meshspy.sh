@@ -67,11 +67,11 @@ docker run -d \
 echo "Container '${CONTAINER_NAME}' avviato con successo."
 
 # Se richiesto, avvio il monitoraggio dei log ogni minuto
-if [ "$LOG" = true ]; then
-  echo "Avvio monitoraggio log del container ogni minuto. Premi Ctrl+C per interrompere."
-  while true; do
-    echo "---------- $(date +'%Y-%m-%d %H:%M:%S') ----------"
-    docker logs --tail 50 ${CONTAINER_NAME}
-    sleep 30
-  done
-fi
+#if [ "$LOG" = true ]; then
+#  echo "Avvio monitoraggio log del container ogni minuto. Premi Ctrl+C per interrompere."
+#  while true; do
+#    echo "---------- $(date +'%Y-%m-%d %H:%M:%S') ----------"
+#    docker logs --tail 50 ${CONTAINER_NAME}
+#    sleep 30
+#  done
+#fi
