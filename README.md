@@ -69,9 +69,11 @@ container with some default environment variables:
 - `MQTT_CLIENT_ID=meshspy-kali`
 - `MQTT_USER=testmeshspy`
 - `MQTT_PASS=test1`
-- `SEND_ALIVE_ON_START=false`
-  (set to `true` if you want the service to send and log a `MeshSpy Alive`
+- `SEND_ALIVE_ON_START=true`
+  (set to `false` if you do **not** want the service to send and log a `MeshSpy Alive`
   message on start-up)
+
+The helper sets this variable so the service announces itself when launched.
 
 Start the container using the defaults:
 
