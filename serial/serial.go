@@ -11,8 +11,8 @@ import (
 	serial "go.bug.st/serial"
 )
 
-var nodeRe = regexp.MustCompile(`from=(0x[0-9a-fA-F]+)`)
-var fallbackRe = regexp.MustCompile(`from (0x[0-9a-fA-F]+)`)
+var nodeRe = regexp.MustCompile(`(?:from|fr|id)=(0x[0-9a-fA-F]+)`)
+var fallbackRe = regexp.MustCompile(`(?:from|fr|id) (0x[0-9a-fA-F]+)`)
 var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 // ReadLoop apre la porta seriale e legge in loop, pubblicando i pacchetti validi
@@ -89,6 +89,7 @@ func parseNodeName(line string) string {
 	}
 	return ""
 }
+
 // Send apre la porta seriale, invia i dati e chiude la porta.
 func Send(portName string, baud int, data string) error {
 	port, err := serial.Open(portName, &serial.Mode{BaudRate: baud})
