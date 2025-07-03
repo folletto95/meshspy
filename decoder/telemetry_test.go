@@ -7,7 +7,7 @@ import (
 	pb "meshspy/proto/latest/meshtastic"
 )
 
-func TestDecodeTelemetry(t *testing.T) {
+func TestDecodeTelemetryRaw(t *testing.T) {
 	orig := &pb.Telemetry{
 		Time:    1234,
 		Variant: &pb.Telemetry_DeviceMetrics{DeviceMetrics: &pb.DeviceMetrics{BatteryLevel: proto.Uint32(80)}},
