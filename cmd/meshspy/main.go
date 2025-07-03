@@ -93,11 +93,13 @@ func main() {
 		log.Fatalf("❌ Porta seriale %s non disponibile: %v", cfg.SerialPort, err)
 	}
 
-	// Invia un messaggio Alive anche al nodo appena la seriale è disponibile
-	if err := serial.SendTextMessage(cfg.SerialPort, aliveMessage); err != nil {
-		log.Printf("⚠️  Errore invio messaggio Alive al nodo: %v", err)
-	} else {
-		log.Printf("✅ Messaggio Alive inviato al nodo")
+	// Invia un messaggio Alive anche al nodo se richiesto
+	if cfg.SendAlive {
+		if err := serial.SendTextMessage(cfg.SerialPort, aliveMessage); err != nil {
+			log.Printf("⚠️  Errore invio messaggio Alive al nodo: %v", err)
+		} else {
+			log.Printf("✅ Messaggio Alive inviato al nodo")
+		}
 	}
 
 	// 📡 Stampa info da meshtastic-go (se disponibile)
