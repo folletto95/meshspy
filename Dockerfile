@@ -5,24 +5,24 @@
 ###########################
 
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-golang:1.21-bullseye} AS builder
+FROM ${BASE_IMAGE:-golang:1.21-alpine} AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-ENV CGO_ENABLED=0 \
+ENV CGO_ENABLED=1 \
     GOOS=${TARGETOS:-linux} \
     GOARCH=${TARGETARCH:-amd64}
 
 WORKDIR /app
 
 # 🔁 Installa git condizionalmente (Alpine vs Debian)
-RUN echo "🔧 Installing git depending on base image: ${BASE_IMAGE}" && \
+RUN echo "🔧 Installing build deps depending on base image: ${BASE_IMAGE}" && \
     if command -v apt-get >/dev/null 2>&1; then \
-        apt-get update && apt-get install -y git; \
+        apt-get update && apt-get install -y git build-essential sqlite3 libsqlite3-dev && rm -rf /var/lib/apt/lists/*; \
     elif command -v apk >/dev/null 2>&1; then \
-        apk add --no-cache git; \
+        apk add --no-cache git build-base sqlite-dev; \
     else \
         echo "❌ Unsupported package manager" && exit 1; \
     fi
@@ -54,7 +54,8 @@ RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
 # 🏁 STAGE: Runtime finale
 ###########################
 
-FROM alpine:3.18
+ARG RUNTIME_IMAGE
+FROM ${RUNTIME_IMAGE:-alpine:3.18}
 
 WORKDIR /app
 
@@ -62,7 +63,7 @@ WORKDIR /app
 COPY --from=builder /app/meshspy .
 
 # Copia il binario webapp e la pagina HTML
-RUN mkdir -p /app/web
+RUN apk add --no-cache sqlite-libs ca-certificates && mkdir -p /app/web
 COPY --from=builder /app/webapp /usr/local/bin/webapp
 COPY --from=builder /app/cmd/webapp/index.html /app/web/index.html
 
