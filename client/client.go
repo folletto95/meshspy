@@ -37,6 +37,7 @@ type NodeInfo struct {
 	Voltage               float64
 	ChannelUtil           float64
 	AirUtilTx             float64
+	UptimeSeconds         int
 	FirmwareVersion       string
 	DeviceStateVer        int
 	CanShutdown           bool
@@ -206,4 +207,12 @@ func PublishAlive(client mqtt.Client, topic string) error {
 	token := client.Publish(topic, 0, false, []byte("MeshSpy Alive"))
 	token.Wait()
 	return token.Error()
+}
+
+// SendAliveIfNeeded publishes an Alive message when cfg.SendAlive is true.
+func SendAliveIfNeeded(client mqtt.Client, cfg config.Config) error {
+	if !cfg.SendAlive {
+		return nil
+	}
+	return PublishAlive(client, cfg.MQTTTopic)
 }

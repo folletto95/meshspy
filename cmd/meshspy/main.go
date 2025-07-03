@@ -58,12 +58,10 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
-	if cfg.SendAlive {
-		if err := mqttpkg.PublishAlive(client, cfg.MQTTTopic); err != nil {
-			log.Printf("⚠️  Errore invio messaggio Alive: %v", err)
-		} else {
-			log.Printf("✅ Messaggio Alive inviato su '%s'", cfg.MQTTTopic)
-		}
+	if err := mqttpkg.SendAliveIfNeeded(client, cfg); err != nil {
+		log.Printf("⚠️  Errore invio messaggio Alive: %v", err)
+	} else if cfg.SendAlive {
+		log.Printf("✅ Messaggio Alive inviato su '%s'", cfg.MQTTTopic)
 	}
 
 	// Sottoscrivi al topic dei comandi e inoltra i messaggi sulla seriale
@@ -127,7 +125,10 @@ func main() {
 		fmt.Printf("ℹ️  Info dispositivo Meshtastic:\n%s\n", output)
 	}
 
-	if info, err := mqttpkg.GetLocalNodeInfo(cfg.SerialPort); err == nil {
+	info, err := mqttpkg.GetLocalNodeInfo(cfg.SerialPort)
+	if err != nil {
+		log.Printf("⚠️ Lettura info nodo fallita: %v", err)
+	} else {
 		if err := mqttpkg.SaveNodeInfo(info, "nodes.json"); err != nil {
 			log.Printf("⚠️ Salvataggio info nodo fallito: %v", err)
 		}
@@ -140,13 +141,11 @@ func main() {
 		} else {
 			log.Printf("✅ Configurazione salvata in %s", cfgFile)
 		}
-		if err := serial.SendTextMessage(cfg.SerialPort, welcomeMessage); err != nil {
-			log.Printf("⚠️ Errore invio messaggio di benvenuto: %v", err)
-		} else {
-			log.Printf("✅ Messaggio di benvenuto inviato")
-		}
+	}
+	if err := serial.SendTextMessage(cfg.SerialPort, welcomeMessage); err != nil {
+		log.Printf("⚠️ Errore invio messaggio di benvenuto: %v", err)
 	} else {
-		log.Printf("⚠️ Lettura info nodo fallita: %v", err)
+		log.Printf("✅ Messaggio di benvenuto inviato")
 	}
 
 	// Avvia la lettura dalla porta seriale in un goroutine

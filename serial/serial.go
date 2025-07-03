@@ -19,6 +19,7 @@ var nodeRe = regexp.MustCompile(`(?:from|fr|id)=(0x[0-9a-fA-F]+)`)
 var fallbackRe = regexp.MustCompile(`(?:from|fr|id) (0x[0-9a-fA-F]+)`)
 var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
+
 // ReadLoop apre la porta seriale e decodifica i messaggi protobuf in arrivo.
 // Invoca i callback forniti per NodeInfo, Telemetry e messaggi di testo.
 // Inoltre pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
@@ -78,6 +79,18 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map,
 				}
 				return
 			}
+		}
+		if mi, err := decoder.DecodeMyInfo([]byte(line), "latest"); err == nil {
+			if handleMyInfo != nil {
+				handleMyInfo(mi)
+			}
+			return
+		}
+		if tel, err := decoder.DecodeTelemetry([]byte(line), "latest"); err == nil {
+			if handleTelemetry != nil {
+				handleTelemetry(tel)
+			}
+			return
 		}
 
 		if txt, err := decoder.DecodeText([]byte(line), "latest"); err == nil {
@@ -167,6 +180,7 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map,
 					}
 				}
 			}
+
 			if txt, err := decoder.DecodeText(payload, "latest"); err == nil {
 				if handleText != nil {
 					handleText(txt)
