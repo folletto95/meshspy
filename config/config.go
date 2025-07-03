@@ -18,19 +18,21 @@ type Config struct {
 	User         string
 	Password     string
 	Debug        bool
+	SendAlive    bool
 }
 
 // Load reads configuration values from the environment and returns a Config.
 func Load() Config {
-	
+
 	baud, err := strconv.Atoi(getEnv("BAUD_RATE", "115200"))
 	if err != nil {
 		log.Fatalf("Invalid BAUD_RATE: %v", err)
 	}
 
 	debug := getEnv("DEBUG", "false") == "true"
+	sendAlive := getEnv("SEND_ALIVE_ON_START", "false") == "true"
 
-		return Config{
+	return Config{
 		SerialPort:   getEnv("SERIAL_PORT", "/dev/ttyUSB0"),
 		BaudRate:     baud,
 		MQTTBroker:   getEnv("MQTT_BROKER", "tcp://mqtt-broker:1883"),
@@ -40,6 +42,7 @@ func Load() Config {
 		User:         os.Getenv("MQTT_USER"),
 		Password:     os.Getenv("MQTT_PASS"),
 		Debug:        debug,
+		SendAlive:    sendAlive,
 	}
 }
 
