@@ -120,7 +120,7 @@ docker buildx build \
   --platform "${PLATFORMS_PARALLEL}" \
   --push \
   -t "${IMAGE}:${TAG}" \
-  --build-arg BASE_IMAGE=golang:1.21-bullseye \
+  --build-arg BASE_IMAGE=golang:1.21-alpine \
   .
 
 # 🔗 Unione ARMv6 nel manifest principale
