@@ -39,6 +39,10 @@ COPY . .
 RUN GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
     go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
+# ✅ COMPILA webapp
+RUN GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
+    go build -ldflags="-s -w" -o webapp ./cmd/webapp
+
 # ✅ CLONA E COMPILA meshtastic-go
 RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
     && cd /tmp/meshtastic-go \
@@ -57,8 +61,17 @@ WORKDIR /app
 # Copia binario principale
 COPY --from=builder /app/meshspy .
 
+# Copia il binario webapp e la pagina HTML
+RUN mkdir -p /app/web
+COPY --from=builder /app/webapp /usr/local/bin/webapp
+COPY --from=builder /app/cmd/webapp/index.html /app/web/index.html
+
 # Copia binario meshtastic-go
 COPY --from=builder /usr/local/bin/meshtastic-go /usr/local/bin/meshtastic-go
+
+# Copia lo script di entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ###########################
 # 🛠️ ENV: Runtime config
@@ -73,4 +86,4 @@ COPY .env.example /app/.env.example
 RUN echo "copiato .env.example"
 
 # Avvio del servizio principale
-ENTRYPOINT ["./meshspy"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
