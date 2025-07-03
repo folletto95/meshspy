@@ -16,6 +16,7 @@ import (
 	"meshspy/config"
 	"meshspy/nodemap"
 	"meshspy/serial"
+	"meshspy/storage"
 
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
@@ -38,6 +39,16 @@ func main() {
 	// Carica la configurazione dalle variabili d'ambiente
 	cfg := config.Load()
 	nodes := nodemap.New()
+
+	nodeDB := os.Getenv("NODE_DB_PATH")
+	if nodeDB == "" {
+		nodeDB = "nodes.db"
+	}
+	nodeStore, err := storage.NewNodeStore(nodeDB)
+	if err != nil {
+		log.Fatalf("❌ apertura db nodi: %v", err)
+	}
+	defer nodeStore.Close()
 
 	// Connessione al broker MQTT
 	client, err := mqttpkg.ConnectMQTT(cfg)
@@ -118,6 +129,9 @@ func main() {
 	if info, err := mqttpkg.GetLocalNodeInfo(cfg.SerialPort); err == nil {
 		if err := mqttpkg.SaveNodeInfo(info, "nodes.json"); err != nil {
 			log.Printf("⚠️ Salvataggio info nodo fallito: %v", err)
+		}
+		if err := nodeStore.Upsert(info); err != nil {
+			log.Printf("⚠️ aggiornamento db nodi: %v", err)
 		}
 		cfgFile := mqttpkg.BuildConfigFilename(info)
 		if err := mqttpkg.ExportConfig(cfg.SerialPort, cfgFile); err != nil {
