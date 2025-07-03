@@ -50,3 +50,15 @@ func (m *Map) Resolve(id string) string {
 	}
 	return id
 }
+
+// ResolveLong returns the long name for the given node id if known, otherwise
+// it falls back to the id itself.
+func (m *Map) ResolveLong(id string) string {
+	m.mu.RLock()
+	e, ok := m.nodes[id]
+	m.mu.RUnlock()
+	if ok && e.Long != "" {
+		return e.Long
+	}
+	return id
+}

@@ -10,6 +10,8 @@
 <body>
 <h1>MeshSpy Messages</h1>
 <div id="messages"></div>
+<h2>Nodes</h2>
+<ul id="nodes"></ul>
 <form id="form">
   <input id="text" autocomplete="off" placeholder="Type a message"/>
   <button type="submit">Send</button>
@@ -39,6 +41,15 @@ document.getElementById("defaultButton").onclick = () => {
   echo.textContent = "You: Hello from web";
   document.getElementById("messages").appendChild(echo);
 };
+
+fetch("/nodes").then(r => r.json()).then(nodes => {
+  const list = document.getElementById("nodes");
+  nodes.forEach(n => {
+    const li = document.createElement("li");
+    li.textContent = n.LongName || n.ID;
+    list.appendChild(li);
+  });
+});
 </script>
 </body>
 </html>
