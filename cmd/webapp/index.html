@@ -12,8 +12,9 @@
 <div id="messages"></div>
 <form id="form">
   <input id="text" autocomplete="off" placeholder="Type a message"/>
-  <button>Send</button>
+  <button type="submit">Send</button>
 </form>
+<button id="defaultButton" type="button">Send default</button>
 <script>
 const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
 ws.onmessage = (ev) => {
@@ -27,6 +28,10 @@ document.getElementById("form").onsubmit = (ev) => {
   const text = document.getElementById("text");
   ws.send(text.value);
   text.value = "";
+};
+
+document.getElementById("defaultButton").onclick = () => {
+  ws.send("Hello from web");
 };
 </script>
 </body>
