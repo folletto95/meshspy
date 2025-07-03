@@ -41,7 +41,7 @@ func main() {
 		}
 		defer conn.Close()
 
-		token := client.Subscribe(cfg.MQTTTopic, 0, func(c mqttpkg.Client, m mqttpkg.Message) {
+		token := client.Subscribe(cfg.MQTTTopic, 0, func(c mqtt.Client, m mqtt.Message) {
 			conn.WriteMessage(websocket.TextMessage, m.Payload())
 		})
 		token.Wait()
