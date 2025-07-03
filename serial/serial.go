@@ -12,14 +12,16 @@ import (
 
 	"meshspy/decoder"
 	"meshspy/nodemap"
+	latestpb "meshspy/proto/latest/meshtastic"
 )
 
 var nodeRe = regexp.MustCompile(`(?:from|fr|id)=(0x[0-9a-fA-F]+)`)
 var fallbackRe = regexp.MustCompile(`(?:from|fr|id) (0x[0-9a-fA-F]+)`)
 var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-// ReadLoop apre la porta seriale e legge in loop, pubblicando i pacchetti validi
-func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, publish func(string)) {
+// ReadLoop apre la porta seriale, decodifica eventuali NodeInfo e invoca il callback,
+// quindi pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
+func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNodeInfo func(*latestpb.NodeInfo), publish func(string)) {
 	var (
 		port serial.Port
 		err  error
@@ -63,6 +65,9 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, publish fu
 		if nm != nil {
 			if ni, err := decoder.DecodeNodeInfo([]byte(line), "latest"); err == nil {
 				nm.UpdateFromProto(ni)
+				if handleNodeInfo != nil {
+					handleNodeInfo(ni)
+				}
 				if debug {
 					log.Printf("[DEBUG nodemap] learned %s => %s/%s", fmt.Sprintf("0x%x", ni.GetNum()), ni.GetUser().GetLongName(), ni.GetUser().GetShortName())
 				}
