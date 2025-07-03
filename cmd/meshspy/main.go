@@ -58,12 +58,10 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
-	if cfg.SendAlive {
-		if err := mqttpkg.PublishAlive(client, cfg.MQTTTopic); err != nil {
-			log.Printf("⚠️  Errore invio messaggio Alive: %v", err)
-		} else {
-			log.Printf("✅ Messaggio Alive inviato su '%s'", cfg.MQTTTopic)
-		}
+	if err := mqttpkg.SendAliveIfNeeded(client, cfg); err != nil {
+		log.Printf("⚠️  Errore invio messaggio Alive: %v", err)
+	} else if cfg.SendAlive {
+		log.Printf("✅ Messaggio Alive inviato su '%s'", cfg.MQTTTopic)
 	}
 
 	// Sottoscrivi al topic dei comandi e inoltra i messaggi sulla seriale

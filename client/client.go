@@ -208,3 +208,11 @@ func PublishAlive(client mqtt.Client, topic string) error {
 	token.Wait()
 	return token.Error()
 }
+
+// SendAliveIfNeeded publishes an Alive message when cfg.SendAlive is true.
+func SendAliveIfNeeded(client mqtt.Client, cfg config.Config) error {
+	if !cfg.SendAlive {
+		return nil
+	}
+	return PublishAlive(client, cfg.MQTTTopic)
+}
