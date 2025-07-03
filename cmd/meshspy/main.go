@@ -14,6 +14,7 @@ import (
 
 	mqttpkg "meshspy/client"
 	"meshspy/config"
+	"meshspy/nodemap"
 	"meshspy/serial"
 
 	paho "github.com/eclipse/paho.mqtt.golang"
@@ -36,6 +37,7 @@ func main() {
 
 	// Carica la configurazione dalle variabili d'ambiente
 	cfg := config.Load()
+	nodes := nodemap.New()
 
 	// Connessione al broker MQTT
 	client, err := mqttpkg.ConnectMQTT(cfg)
@@ -132,7 +134,7 @@ func main() {
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
-		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, func(data string) {
+		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, nodes, func(data string) {
 			// Pubblica ogni messaggio ricevuto sul topic MQTT
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()
