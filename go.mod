@@ -10,7 +10,10 @@ require (
 	go.bug.st/serial v1.6.4
 )
 
-require github.com/mattn/go-sqlite3 v1.14.28
+require (
+	github.com/mattn/go-sqlite3 v1.14.28
+	google.golang.org/protobuf v1.36.6
+)
 
 require github.com/creack/goselect v0.1.2 // indirect
 
