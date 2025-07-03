@@ -132,6 +132,7 @@ func main() {
 		if err := mqttpkg.SaveNodeInfo(info, "nodes.json"); err != nil {
 			log.Printf("⚠️ Salvataggio info nodo fallito: %v", err)
 		}
+		nodes.Update(info.Num, info.LongName, info.ShortName)
 		if err := nodeStore.Upsert(info); err != nil {
 			log.Printf("⚠️ aggiornamento db nodi: %v", err)
 		}
