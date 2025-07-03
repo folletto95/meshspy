@@ -61,6 +61,7 @@ docker run -d \
   -e MQTT_CLIENT_ID=meshspy-kali \
   -e MQTT_USER="testmeshspy" \
   -e MQTT_PASS="test1" \
+  -e SEND_ALIVE_ON_START=true \
   $IMAGE_NAME
 
 echo "Container '${CONTAINER_NAME}' avviato con successo."
