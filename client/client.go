@@ -113,7 +113,7 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 
 		switch {
 		case strings.HasPrefix(line, "User"):
-			re := regexp.MustCompile(`id:"([^"]+)"\s+long_name:"([^"]+)"\s+short_name:"([^"]+)"\s+macaddr:"([^"]+)"\s+hw_model:(\S+)\s+role:(\S+)`)
+			re := regexp.MustCompile(`id:"([^"]+)".*?long_name:"([^"]+)".*?short_name:"([^"]+)".*?macaddr:"([^"]+)".*?hw_model:(\S+).*?role:(\S+)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) >= 7 {
 				node.ID = matches[1]

@@ -46,7 +46,8 @@ fetch("/nodes").then(r => r.json()).then(nodes => {
   const list = document.getElementById("nodes");
   nodes.forEach(n => {
     const li = document.createElement("li");
-    li.textContent = n.LongName || n.ID;
+    const name = n.LongName || n.ID;
+    li.textContent = `${name} [${n.ShortName}] id:${n.ID} battery:${n.BatteryLevel}%`;
     list.appendChild(li);
   });
 });
