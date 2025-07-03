@@ -19,7 +19,10 @@ import (
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
-const welcomeMessage = "Ciao da MeshSpy, presto (spero) per tutti"
+const (
+	welcomeMessage = "Ciao da MeshSpy, presto (spero) per tutti"
+	aliveMessage   = "MeshSpy Alive"
+)
 
 func main() {
 	log.Println("🔥 MeshSpy avviamento iniziato...")
@@ -84,6 +87,13 @@ func main() {
 	// 📡 Attende la disponibilità della porta seriale prima di eseguire meshtastic-go
 	if err := serial.WaitForSerial(cfg.SerialPort, 30*time.Second); err != nil {
 		log.Fatalf("❌ Porta seriale %s non disponibile: %v", cfg.SerialPort, err)
+	}
+
+	// Invia un messaggio Alive anche al nodo appena la seriale è disponibile
+	if err := serial.SendTextMessage(cfg.SerialPort, aliveMessage); err != nil {
+		log.Printf("⚠️  Errore invio messaggio Alive al nodo: %v", err)
+	} else {
+		log.Printf("✅ Messaggio Alive inviato al nodo")
 	}
 
 	// 📡 Stampa info da meshtastic-go (se disponibile)

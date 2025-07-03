@@ -50,8 +50,9 @@ docker run --device=/dev/ttyACM0 \
 
 During start-up the service prints information from `meshtastic-go` and begins
 streaming data from the serial port to the configured MQTT topic. It also
-sends a `MeshSpy Alive` message on the configured MQTT topic so other
-components can detect that the service is running.
+sends a `MeshSpy Alive` message on the configured MQTT topic and to the node
+itself using `meshtastic-go --sendtext`, so other components can detect that
+the service is running and nodes are reached.
 
 ### `start_meshspy.sh` helper
 
