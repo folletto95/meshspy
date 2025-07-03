@@ -11,9 +11,9 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-ENV CGO_ENABLED=0 \
+ENV CGO_ENABLED=1 \
     GOOS=${TARGETOS:-linux} \
-    GOARCH=${TARGETARCH:-amd64} 
+    GOARCH=${TARGETARCH:-amd64}
 
 WORKDIR /app
 
@@ -54,7 +54,7 @@ RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
 # 🏁 STAGE: Runtime finale
 ###########################
 
-FROM alpine:3.18
+FROM debian:bullseye-slim
 
 WORKDIR /app
 
