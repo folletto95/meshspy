@@ -30,7 +30,11 @@ func main() {
 	defer client.Disconnect(250)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/index.html")
+		if _, err := os.Stat("web/index.html"); err == nil {
+			http.ServeFile(w, r, "web/index.html")
+		} else {
+			http.ServeFile(w, r, "cmd/webapp/index.html")
+		}
 	})
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +45,7 @@ func main() {
 		}
 		defer conn.Close()
 
-				token := client.Subscribe(cfg.MQTTTopic, 0, func(c mqtt.Client, m mqtt.Message) {
+		token := client.Subscribe(cfg.MQTTTopic, 0, func(c mqtt.Client, m mqtt.Message) {
 			conn.WriteMessage(websocket.TextMessage, m.Payload())
 		})
 		token.Wait()
