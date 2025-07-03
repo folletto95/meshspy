@@ -19,12 +19,14 @@ var nodeRe = regexp.MustCompile(`(?:from|fr|id)=(0x[0-9a-fA-F]+)`)
 var fallbackRe = regexp.MustCompile(`(?:from|fr|id) (0x[0-9a-fA-F]+)`)
 var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-// ReadLoop apre la porta seriale, decodifica eventuali NodeInfo e invoca il callback,
-// quindi pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
+
+// ReadLoop apre la porta seriale e decodifica i messaggi protobuf in arrivo.
+// Invoca i callback forniti per NodeInfo, Telemetry e messaggi di testo.
+// Inoltre pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
 func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
-	handleMyInfo func(*latestpb.MyNodeInfo),
 	handleTelemetry func(*latestpb.Telemetry),
+	handleText func(string),
 	publish func(string)) {
 	var (
 		port serial.Port
@@ -87,6 +89,20 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map,
 		if tel, err := decoder.DecodeTelemetry([]byte(line), "latest"); err == nil {
 			if handleTelemetry != nil {
 				handleTelemetry(tel)
+			}
+			return
+		}
+
+		if txt, err := decoder.DecodeText([]byte(line), "latest"); err == nil {
+			if handleText != nil {
+				handleText(txt)
+			}
+			return
+		}
+
+		if tele, err := decoder.DecodeTelemetry([]byte(line), "latest"); err == nil {
+			if handleTelemetry != nil {
+				handleTelemetry(tele)
 			}
 			return
 		}
@@ -164,13 +180,14 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map,
 					}
 				}
 			}
-			if mi, err := decoder.DecodeMyInfo(payload, "latest"); err == nil {
-				if handleMyInfo != nil {
-					handleMyInfo(mi)
+
+			if txt, err := decoder.DecodeText(payload, "latest"); err == nil {
+				if handleText != nil {
+					handleText(txt)
 				}
-			} else if tel, err := decoder.DecodeTelemetry(payload, "latest"); err == nil {
+			} else if tele, err := decoder.DecodeTelemetry(payload, "latest"); err == nil {
 				if handleTelemetry != nil {
-					handleTelemetry(tel)
+					handleTelemetry(tele)
 				}
 			}
 			buf = buf[headerLen+length:]
