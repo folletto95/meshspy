@@ -59,3 +59,73 @@ func TestNodeStoreUpsertAndList(t *testing.T) {
 		t.Fatalf("node data mismatch: got %+v want %+v", got, n2)
 	}
 }
+
+func TestNodeStoreUpsertInsertAndUpdate(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "nodes.db")
+
+	ns, err := NewNodeStore(dbPath)
+	if err != nil {
+		t.Fatalf("NewNodeStore returned error: %v", err)
+	}
+	defer func() { ns.Close() }()
+
+	if err := ns.Upsert(&mqttpkg.NodeInfo{ID: "id1", LongName: "first"}); err != nil {
+		t.Fatalf("Upsert insert returned error: %v", err)
+	}
+	if err := ns.Upsert(&mqttpkg.NodeInfo{ID: "id2", LongName: "second"}); err != nil {
+		t.Fatalf("Upsert insert returned error: %v", err)
+	}
+
+	if err := ns.Upsert(&mqttpkg.NodeInfo{ID: "id1", LongName: "first updated"}); err != nil {
+		t.Fatalf("Upsert update returned error: %v", err)
+	}
+
+	nodes, err := ns.List()
+	if err != nil {
+		t.Fatalf("List returned error: %v", err)
+	}
+	if len(nodes) != 2 {
+		t.Fatalf("expected 2 nodes, got %d", len(nodes))
+	}
+
+	m := map[string]*mqttpkg.NodeInfo{}
+	for _, n := range nodes {
+		m[n.ID] = n
+	}
+	if m["id1"].LongName != "first updated" || m["id2"].LongName != "second" {
+		t.Fatalf("nodes not stored correctly: %+v", m)
+	}
+}
+
+func TestNodeStoreListOrder(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "nodes.db")
+
+	ns, err := NewNodeStore(dbPath)
+	if err != nil {
+		t.Fatalf("NewNodeStore returned error: %v", err)
+	}
+	defer func() { ns.Close() }()
+
+	ids := []string{"c", "a", "b"}
+	for _, id := range ids {
+		if err := ns.Upsert(&mqttpkg.NodeInfo{ID: id}); err != nil {
+			t.Fatalf("Upsert returned error: %v", err)
+		}
+	}
+
+	nodes, err := ns.List()
+	if err != nil {
+		t.Fatalf("List returned error: %v", err)
+	}
+	want := []string{"a", "b", "c"}
+	if len(nodes) != len(want) {
+		t.Fatalf("expected %d nodes, got %d", len(want), len(nodes))
+	}
+	for i, n := range nodes {
+		if n.ID != want[i] {
+			t.Fatalf("unexpected order: got %v want %v", n.ID, want[i])
+		}
+	}
+}
