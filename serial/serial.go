@@ -21,7 +21,11 @@ var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 // ReadLoop apre la porta seriale, decodifica eventuali NodeInfo e invoca il callback,
 // quindi pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
-func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNodeInfo func(*latestpb.NodeInfo), publish func(string)) {
+func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map,
+	handleNodeInfo func(*latestpb.NodeInfo),
+	handleMyInfo func(*latestpb.MyNodeInfo),
+	handleTelemetry func(*latestpb.Telemetry),
+	publish func(string)) {
 	var (
 		port serial.Port
 		err  error
@@ -73,6 +77,18 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNode
 				}
 				return
 			}
+		}
+		if mi, err := decoder.DecodeMyInfo([]byte(line), "latest"); err == nil {
+			if handleMyInfo != nil {
+				handleMyInfo(mi)
+			}
+			return
+		}
+		if tel, err := decoder.DecodeTelemetry([]byte(line), "latest"); err == nil {
+			if handleTelemetry != nil {
+				handleTelemetry(tel)
+			}
+			return
 		}
 
 		node := parseNodeName(line)
@@ -146,6 +162,15 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNode
 					if debug {
 						log.Printf("[DEBUG nodemap] learned %s => %s/%s", fmt.Sprintf("0x%x", ni.GetNum()), ni.GetUser().GetLongName(), ni.GetUser().GetShortName())
 					}
+				}
+			}
+			if mi, err := decoder.DecodeMyInfo(payload, "latest"); err == nil {
+				if handleMyInfo != nil {
+					handleMyInfo(mi)
+				}
+			} else if tel, err := decoder.DecodeTelemetry(payload, "latest"); err == nil {
+				if handleTelemetry != nil {
+					handleTelemetry(tel)
 				}
 			}
 			buf = buf[headerLen+length:]
