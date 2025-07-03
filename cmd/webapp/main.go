@@ -43,10 +43,17 @@ func main() {
 			log.Printf("upgrade error: %v", err)
 			return
 		}
-		defer conn.Close()
+		log.Printf("🔌 websocket client %s connected", r.RemoteAddr)
+		defer func() {
+			log.Printf("🔌 websocket client %s disconnected", r.RemoteAddr)
+			conn.Close()
+		}()
 
 		token := client.Subscribe(cfg.MQTTTopic, 0, func(c mqtt.Client, m mqtt.Message) {
-			conn.WriteMessage(websocket.TextMessage, m.Payload())
+			log.Printf("⬇️ MQTT message on %s: %s", cfg.MQTTTopic, m.Payload())
+			if err := conn.WriteMessage(websocket.TextMessage, m.Payload()); err != nil {
+				log.Printf("websocket write error: %v", err)
+			}
 		})
 		token.Wait()
 		if token.Error() != nil {
@@ -61,10 +68,16 @@ func main() {
 				log.Printf("websocket read error: %v", err)
 				break
 			}
+			log.Printf("➡️  from web client: %s", message)
 			t := client.Publish(cfg.CommandTopic, 0, false, message)
 			t.Wait()
 			if t.Error() != nil {
 				log.Printf("MQTT publish error: %v", t.Error())
+			} else {
+				log.Printf("⬆️ MQTT publish to %s: %s", cfg.CommandTopic, message)
+			}
+			if err := conn.WriteMessage(websocket.TextMessage, append([]byte("echo: "), message...)); err != nil {
+				log.Printf("websocket echo error: %v", err)
 			}
 		}
 	})
