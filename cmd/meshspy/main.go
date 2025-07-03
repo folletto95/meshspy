@@ -158,7 +158,7 @@ func main() {
 					log.Printf("⚠️ aggiornamento db nodi: %v", err)
 				}
 			}
-		}, func(data string) {
+		}, nil, nil, func(data string) {
 			// Pubblica ogni messaggio ricevuto sul topic MQTT
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()

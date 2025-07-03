@@ -19,9 +19,14 @@ var nodeRe = regexp.MustCompile(`(?:from|fr|id)=(0x[0-9a-fA-F]+)`)
 var fallbackRe = regexp.MustCompile(`(?:from|fr|id) (0x[0-9a-fA-F]+)`)
 var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-// ReadLoop apre la porta seriale, decodifica eventuali NodeInfo e invoca il callback,
-// quindi pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
-func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNodeInfo func(*latestpb.NodeInfo), publish func(string)) {
+// ReadLoop apre la porta seriale e decodifica i messaggi protobuf in arrivo.
+// Invoca i callback forniti per NodeInfo, Telemetry e messaggi di testo.
+// Inoltre pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
+func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map,
+	handleNodeInfo func(*latestpb.NodeInfo),
+	handleTelemetry func(*latestpb.Telemetry),
+	handleText func(string),
+	publish func(string)) {
 	var (
 		port serial.Port
 		err  error
@@ -73,6 +78,20 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNode
 				}
 				return
 			}
+		}
+
+		if txt, err := decoder.DecodeText([]byte(line), "latest"); err == nil {
+			if handleText != nil {
+				handleText(txt)
+			}
+			return
+		}
+
+		if tele, err := decoder.DecodeTelemetry([]byte(line), "latest"); err == nil {
+			if handleTelemetry != nil {
+				handleTelemetry(tele)
+			}
+			return
 		}
 
 		node := parseNodeName(line)
@@ -146,6 +165,15 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNode
 					if debug {
 						log.Printf("[DEBUG nodemap] learned %s => %s/%s", fmt.Sprintf("0x%x", ni.GetNum()), ni.GetUser().GetLongName(), ni.GetUser().GetShortName())
 					}
+				}
+			}
+			if txt, err := decoder.DecodeText(payload, "latest"); err == nil {
+				if handleText != nil {
+					handleText(txt)
+				}
+			} else if tele, err := decoder.DecodeTelemetry(payload, "latest"); err == nil {
+				if handleTelemetry != nil {
+					handleTelemetry(tele)
 				}
 			}
 			buf = buf[headerLen+length:]
