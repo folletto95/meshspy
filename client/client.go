@@ -22,31 +22,39 @@ import (
 
 // NodeInfo represents the information extracted from a Meshtastic device.
 type NodeInfo struct {
-	ID                string
-	LongName          string
-	ShortName         string
-	MacAddr           string
-	HwModel           string
-	Role              string
-	Latitude          float64
-	Longitude         float64
-	Altitude          int
-	LocationTime      int64
-	LocationSource    string
-	BatteryLevel      int
-	Voltage           float64
-	ChannelUtil       float64
-	AirUtilTx         float64
-	FirmwareVersion   string
-	DeviceStateVer    int
-	CanShutdown       bool
-	HasWifi           bool
-	HasBluetooth      bool
-	HasEthernet       bool
-	RadioRole         string
-	PositionFlags     int
-	RadioHwModel      string
-	HasRemoteHardware bool
+	ID                    string
+	LongName              string
+	ShortName             string
+	MacAddr               string
+	HwModel               string
+	Role                  string
+	Latitude              float64
+	Longitude             float64
+	Altitude              int
+	LocationTime          int64
+	LocationSource        string
+	BatteryLevel          int
+	Voltage               float64
+	ChannelUtil           float64
+	AirUtilTx             float64
+	FirmwareVersion       string
+	DeviceStateVer        int
+	CanShutdown           bool
+	HasWifi               bool
+	HasBluetooth          bool
+	HasEthernet           bool
+	RadioRole             string
+	PositionFlags         int
+	RadioHwModel          string
+	HasRemoteHardware     bool
+	Snr                   float64
+	LastHeard             int64
+	Channel               int
+	ViaMqtt               bool
+	HopsAway              int
+	IsFavorite            bool
+	IsIgnored             bool
+	IsKeyManuallyVerified bool
 }
 
 // Espressioni regolari

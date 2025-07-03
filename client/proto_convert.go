@@ -33,5 +33,13 @@ func NodeInfoFromProto(ni *latestpb.NodeInfo) *NodeInfo {
 		info.ChannelUtil = float64(dm.GetChannelUtilization())
 		info.AirUtilTx = float64(dm.GetAirUtilTx())
 	}
+	info.Snr = float64(ni.GetSnr())
+	info.LastHeard = int64(ni.GetLastHeard())
+	info.Channel = int(ni.GetChannel())
+	info.ViaMqtt = ni.GetViaMqtt()
+	info.HopsAway = int(ni.GetHopsAway())
+	info.IsFavorite = ni.GetIsFavorite()
+	info.IsIgnored = ni.GetIsIgnored()
+	info.IsKeyManuallyVerified = ni.GetIsKeyManuallyVerified()
 	return info
 }
