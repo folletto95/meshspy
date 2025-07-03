@@ -89,6 +89,11 @@ periodically show container logs:
 
 Both options can be combined if required.
 
+The service stores information about all discovered nodes in a SQLite database
+named `nodes.db` inside the container data directory. Each time a `NodeInfo`
+protobuf message is received it is converted and inserted or updated in this
+database so that external tools can inspect the mesh topology.
+
 ## Web Application
 
 A simple web interface lives in `cmd/webapp`. It serves an HTML page and

@@ -15,6 +15,7 @@ import (
 	mqttpkg "meshspy/client"
 	"meshspy/config"
 	"meshspy/nodemap"
+	latestpb "meshspy/proto/latest/meshtastic"
 	"meshspy/serial"
 	"meshspy/storage"
 
@@ -150,7 +151,14 @@ func main() {
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
-		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, nodes, func(data string) {
+		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, nodes, func(ni *latestpb.NodeInfo) {
+			info := mqttpkg.NodeInfoFromProto(ni)
+			if info != nil {
+				if err := nodeStore.Upsert(info); err != nil {
+					log.Printf("⚠️ aggiornamento db nodi: %v", err)
+				}
+			}
+		}, func(data string) {
 			// Pubblica ogni messaggio ricevuto sul topic MQTT
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()

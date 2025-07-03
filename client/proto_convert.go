@@ -1,0 +1,37 @@
+package mqtt
+
+import (
+	"fmt"
+
+	latestpb "meshspy/proto/latest/meshtastic"
+)
+
+// NodeInfoFromProto converts a protobuf NodeInfo message to the internal NodeInfo type.
+func NodeInfoFromProto(ni *latestpb.NodeInfo) *NodeInfo {
+	if ni == nil || ni.GetUser() == nil {
+		return nil
+	}
+	u := ni.GetUser()
+	info := &NodeInfo{
+		ID:        fmt.Sprintf("0x%x", ni.GetNum()),
+		LongName:  u.GetLongName(),
+		ShortName: u.GetShortName(),
+		MacAddr:   fmt.Sprintf("%x", u.GetMacaddr()),
+		HwModel:   u.GetHwModel().String(),
+		Role:      u.GetRole().String(),
+	}
+	if pos := ni.GetPosition(); pos != nil {
+		info.Latitude = float64(pos.GetLatitudeI()) / 1e7
+		info.Longitude = float64(pos.GetLongitudeI()) / 1e7
+		info.Altitude = int(pos.GetAltitude())
+		info.LocationTime = int64(pos.GetTime())
+		info.LocationSource = pos.GetLocationSource().String()
+	}
+	if dm := ni.GetDeviceMetrics(); dm != nil {
+		info.BatteryLevel = int(dm.GetBatteryLevel())
+		info.Voltage = float64(dm.GetVoltage())
+		info.ChannelUtil = float64(dm.GetChannelUtilization())
+		info.AirUtilTx = float64(dm.GetAirUtilTx())
+	}
+	return info
+}
