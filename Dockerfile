@@ -54,7 +54,7 @@ RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
 # 🏁 STAGE: Runtime finale
 ###########################
 
-FROM debian:alpine:3.18
+FROM alpine:3.18
 
 WORKDIR /app
 
