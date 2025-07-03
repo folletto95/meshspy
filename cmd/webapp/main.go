@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 
 	mqttpkg "meshspy/client"
 	"meshspy/config"
+	"meshspy/storage"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gorilla/websocket"
@@ -29,12 +31,32 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
+	dbPath := os.Getenv("NODE_DB_PATH")
+	if dbPath == "" {
+		dbPath = "nodes.db"
+	}
+	nodeStore, err := storage.NewNodeStore(dbPath)
+	if err != nil {
+		log.Fatalf("node store open error: %v", err)
+	}
+	defer nodeStore.Close()
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := os.Stat("web/index.html"); err == nil {
 			http.ServeFile(w, r, "web/index.html")
 		} else {
 			http.ServeFile(w, r, "cmd/webapp/index.html")
 		}
+	})
+
+	http.HandleFunc("/nodes", func(w http.ResponseWriter, r *http.Request) {
+		nodes, err := nodeStore.List()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(nodes)
 	})
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {

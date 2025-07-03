@@ -83,7 +83,7 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNode
 			continue
 		}
 		if nm != nil {
-			node = nm.Resolve(node)
+			node = nm.ResolveLong(node)
 		}
 		if node == lastNode {
 			continue
