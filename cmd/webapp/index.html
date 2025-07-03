@@ -27,11 +27,17 @@ document.getElementById("form").onsubmit = (ev) => {
   ev.preventDefault();
   const text = document.getElementById("text");
   ws.send(text.value);
+  const echo = document.createElement("div");
+  echo.textContent = "You: " + text.value;
+  document.getElementById("messages").appendChild(echo);
   text.value = "";
 };
 
 document.getElementById("defaultButton").onclick = () => {
   ws.send("Hello from web");
+  const echo = document.createElement("div");
+  echo.textContent = "You: Hello from web";
+  document.getElementById("messages").appendChild(echo);
 };
 </script>
 </body>
