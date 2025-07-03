@@ -90,7 +90,7 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNode
 		}
 		lastNode = node
 
-		payload := fmt.Sprintf(`{"node":"%s","ts":%d}`, node, time.Now().Unix())
+		payload := fmt.Sprintf(`{"node":"%s"}`, node)
 		publish(payload)
 	}
 }
