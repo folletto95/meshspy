@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -14,11 +15,14 @@ import (
 	"meshspy/client"
 	"meshspy/config"
 	"meshspy/serial"
-	
 )
 
 func main() {
 	log.Println("🔥 MeshSpy avviamento iniziato...")
+
+	msg := flag.String("sendtext", "", "Messaggio da inviare invece di avviare il listener")
+	dest := flag.String("dest", "", "Nodo destinatario (opzionale)")
+	flag.Parse()
 
 	// Carica .env.runtime se presente
 	if err := godotenv.Load(".env.runtime"); err != nil {
@@ -29,6 +33,14 @@ func main() {
 
 	// Carica la configurazione dalle variabili d'ambiente
 	cfg := config.Load()
+
+	if *msg != "" {
+		if err := mqtt.SendText(cfg.SerialPort, *dest, *msg); err != nil {
+			log.Fatalf("❌ Errore invio messaggio: %v", err)
+		}
+		log.Printf("✅ Messaggio inviato a %s", *dest)
+		return
+	}
 
 	// Connessione al broker MQTT
 	client, err := mqtt.ConnectMQTT(cfg)
@@ -60,7 +72,6 @@ func main() {
 	} else {
 		log.Printf("⚠️ Lettura info nodo fallita: %v", err)
 	}
-	
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
