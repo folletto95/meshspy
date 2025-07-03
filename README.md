@@ -53,6 +53,35 @@ streaming data from the serial port to the configured MQTT topic. It also
 sends a `MeshSpy Alive` message on the configured MQTT topic so other
 components can detect that the service is running.
 
+### `start_meshspy.sh` helper
+
+For a quick start, run the `start_meshspy.sh` script which launches the
+container with some default environment variables:
+
+- `SERIAL_PORT=/dev/ttyACM0`
+- `BAUD_RATE=115200`
+- `MQTT_BROKER=tcp://smpisa.ddns.net:1883`
+- `MQTT_TOPIC=meshspy`
+- `MQTT_CLIENT_ID=meshspy-kali`
+- `MQTT_USER=testmeshspy`
+- `MQTT_PASS=test1`
+
+Start the container using the defaults:
+
+```bash
+./start_meshspy.sh
+```
+
+Use `--clean` to remove and re-pull the image before starting and `--log` to
+periodically show container logs:
+
+```bash
+./start_meshspy.sh --clean
+./start_meshspy.sh --log
+```
+
+Both options can be combined if required.
+
 ## Web Application
 
 A simple web interface lives in `cmd/webapp`. It serves an HTML page and
