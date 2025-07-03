@@ -32,6 +32,7 @@ func NodeInfoFromProto(ni *latestpb.NodeInfo) *NodeInfo {
 		info.Voltage = float64(dm.GetVoltage())
 		info.ChannelUtil = float64(dm.GetChannelUtilization())
 		info.AirUtilTx = float64(dm.GetAirUtilTx())
+		info.UptimeSeconds = int(dm.GetUptimeSeconds())
 	}
 	info.Snr = float64(ni.GetSnr())
 	info.LastHeard = int64(ni.GetLastHeard())
