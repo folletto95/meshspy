@@ -14,6 +14,7 @@ import (
 	//"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"meshspy/config"
@@ -56,11 +57,26 @@ type NodeInfo struct {
 
 // GetLocalNodeInfo esegue meshtastic-go e recupera i dati dal primo nodo dopo "Radio Settings:"
 func GetLocalNodeInfo(port string) (*NodeInfo, error) {
-	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "info")
-	output, err := cmd.CombinedOutput()
-	//fmt.Printf("📤 Eseguo comando: %s\n", strings.Join(cmd.Args, " "))
-	//fmt.Println("🔍 Output completo di meshtastic-go:\n")
-	//fmt.Println(string(output))
+	var (
+		output []byte
+		err    error
+	)
+
+	for attempt := 1; attempt <= 5; attempt++ {
+		cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "info")
+		output, err = cmd.CombinedOutput()
+		//fmt.Printf("📤 Eseguo comando: %s\n", strings.Join(cmd.Args, " "))
+		//fmt.Println("🔍 Output completo di meshtastic-go:\n")
+		//fmt.Println(string(output))
+
+		if err == nil {
+			break
+		}
+
+		fmt.Printf("❌ Errore durante l'esecuzione di meshtastic-go (tentativo %d/5): %v\n", attempt, err)
+		time.Sleep(time.Second)
+	}
+
 	if err != nil {
 		fmt.Printf("❌ Errore durante l'esecuzione di meshtastic-go: %v\n", err)
 		return nil, err
