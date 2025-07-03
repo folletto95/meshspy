@@ -29,8 +29,19 @@ func Load() Config {
 		log.Fatalf("Invalid BAUD_RATE: %v", err)
 	}
 
-	debug := getEnv("DEBUG", "false") == "true"
-	sendAlive := getEnv("SEND_ALIVE_ON_START", "false") == "true"
+	debugStr := getEnv("DEBUG", "false")
+	debug, err := strconv.ParseBool(debugStr)
+	if err != nil {
+		log.Printf("invalid DEBUG value %q, defaulting to false", debugStr)
+		debug = false
+	}
+
+	aliveStr := getEnv("SEND_ALIVE_ON_START", "false")
+	sendAlive, err := strconv.ParseBool(aliveStr)
+	if err != nil {
+		log.Printf("invalid SEND_ALIVE_ON_START value %q, defaulting to false", aliveStr)
+		sendAlive = false
+	}
 
 	return Config{
 		SerialPort:   getEnv("SERIAL_PORT", "/dev/ttyUSB0"),

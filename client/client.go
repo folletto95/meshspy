@@ -156,11 +156,11 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 		case strings.HasPrefix(line, "HasRemoteHardware"):
 			node.HasRemoteHardware = strings.Contains(line, "true")
 		}
-	   }
-       if err := scanner.Err(); err != nil {
-               return nil, err
-       }
-		return node, nil
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return node, nil
 }
 
 // ConnectMQTT crea e restituisce un client MQTT connesso
