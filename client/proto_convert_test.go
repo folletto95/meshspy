@@ -1,6 +1,7 @@
 package mqtt
 
 import (
+	"math"
 	"testing"
 
 	pb "meshspy/proto/latest/meshtastic"
@@ -36,5 +37,47 @@ func TestNodeInfoFromProto(t *testing.T) {
 		t.Fatalf("bool flags incorrect")
 	}
 }
+
+func TestNodeInfoFromProtoMetrics(t *testing.T) {
+	ni := &pb.NodeInfo{
+		User: &pb.User{Id: "id"},
+		DeviceMetrics: &pb.DeviceMetrics{
+			BatteryLevel:       protoUint32(80),
+			Voltage:            protoFloat32(3.3),
+			ChannelUtilization: protoFloat32(4.5),
+			AirUtilTx:          protoFloat32(2.1),
+			UptimeSeconds:      protoUint32(3600),
+		},
+		Position: &pb.Position{
+			LatitudeI:      protoInt32(123456789),
+			LongitudeI:     protoInt32(-123456789),
+			Altitude:       protoInt32(250),
+			Time:           42,
+			LocationSource: pb.Position_LOC_INTERNAL,
+		},
+	}
+	info := NodeInfoFromProto(ni)
+	if info == nil {
+		t.Fatal("nil info")
+	}
+	if info.BatteryLevel != 80 {
+		t.Fatalf("battery=%d", info.BatteryLevel)
+	}
+	if math.Abs(info.Voltage-3.3) > 1e-6 {
+		t.Fatalf("voltage=%v", info.Voltage)
+	}
+	if math.Abs(info.ChannelUtil-4.5) > 1e-6 || math.Abs(info.AirUtilTx-2.1) > 1e-6 || info.UptimeSeconds != 3600 {
+		t.Fatalf("util mismatch: %+v", info)
+	}
+	if info.Latitude != float64(123456789)/1e7 || info.Longitude != float64(-123456789)/1e7 {
+		t.Fatalf("position mismatch: %+v", info)
+	}
+	if info.LocationSource != pb.Position_LOC_INTERNAL.String() {
+		t.Fatalf("location source mismatch: %s", info.LocationSource)
+	}
+}
+
+func protoFloat32(v float32) *float32 { return &v }
+func protoInt32(v int32) *int32       { return &v }
 
 func protoUint32(v uint32) *uint32 { return &v }

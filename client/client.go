@@ -37,6 +37,7 @@ type NodeInfo struct {
 	Voltage               float64
 	ChannelUtil           float64
 	AirUtilTx             float64
+	UptimeSeconds         int
 	FirmwareVersion       string
 	DeviceStateVer        int
 	CanShutdown           bool
