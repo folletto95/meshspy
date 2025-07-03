@@ -72,6 +72,9 @@ container with some default environment variables:
 - `SEND_ALIVE_ON_START=true`
   (set to `false` if you do **not** want the service to send and log a `MeshSpy Alive`
   message on start-up)
+- `NODE_DB_PATH=nodes.db`
+  (path for the SQLite database that stores node information; change this to
+  override the default location)
 
 The helper sets this variable so the service announces itself when launched.
 
@@ -91,10 +94,11 @@ periodically show container logs:
 
 Both options can be combined if required.
 
-The service stores information about all discovered nodes in a SQLite database
-named `nodes.db` inside the container data directory. Each time a `NodeInfo`
-protobuf message is received it is converted and inserted or updated in this
-database so that external tools can inspect the mesh topology.
+The service stores information about all discovered nodes in a SQLite database.
+By default this file is `nodes.db` inside the container data directory. Set the
+`NODE_DB_PATH` environment variable to use a different file. Each time a
+`NodeInfo` protobuf message is received it is converted and inserted or updated
+in this database so that external tools can inspect the mesh topology.
 
 ## Web Application
 
