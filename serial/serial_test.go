@@ -8,9 +8,12 @@ func TestParseNodeName(t *testing.T) {
 		want string
 	}{
 		{"[INF] packet from=0x1a2b seq=1", "0x1a2b"},
+		{"[INF] packet fr=0x1234 seq=1", "0x1234"},
+		{"[INF] packet id=0x4321", "0x4321"},
 		{"[DBG] other from 0xABCD tail", "0xABCD"},
+		{"[DBG] other fr 0x99AA tail", "0x99AA"},
 		{"node status from=0x0", "0x0"},
-		{"prefix from=0xDEAD data from 0xBEEF", "0xDEAD"},
+		{"prefix id=0xDEAD data fr=0xBEEF", "0xDEAD"},
 		{"garbage log line", ""},
 		{"from=nothex", ""},
 	}

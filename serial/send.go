@@ -1,4 +1,4 @@
-package mqtt
+package serial
 
 import (
 	"fmt"
