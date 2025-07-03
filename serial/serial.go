@@ -1,7 +1,7 @@
 package serial
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -41,22 +41,22 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNode
 	}
 	defer port.Close()
 
-	reader := bufio.NewReader(port)
 	log.Printf("Listening on serial %s at %d baud", portName, baud)
 
-	var lastNode string
+	const (
+		start1    = 0x94
+		start2    = 0xC3
+		headerLen = 4
+		maxSize   = 512
+	)
 
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				continue
-			}
-			log.Printf("Serial read error: %v", err)
-			time.Sleep(time.Second)
-			continue
-		}
+	var (
+		buf      []byte
+		logBuf   bytes.Buffer
+		lastNode string
+	)
 
+	handleLine := func(line string) {
 		line = cleanLine(line)
 		if debug {
 			log.Printf("[DEBUG serial] %q", line)
@@ -71,7 +71,7 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNode
 				if debug {
 					log.Printf("[DEBUG nodemap] learned %s => %s/%s", fmt.Sprintf("0x%x", ni.GetNum()), ni.GetUser().GetLongName(), ni.GetUser().GetShortName())
 				}
-				continue
+				return
 			}
 		}
 
@@ -80,18 +80,76 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map, handleNode
 			if debug {
 				log.Printf("[DEBUG parse] no node found in %q", line)
 			}
-			continue
+			return
 		}
 		if nm != nil {
 			node = nm.Resolve(node)
 		}
 		if node == lastNode {
-			continue
+			return
 		}
 		lastNode = node
 
 		payload := fmt.Sprintf(`{"node":"%s"}`, node)
 		publish(payload)
+	}
+
+	for {
+		var b [1]byte
+		n, err := port.Read(b[:])
+		if err != nil {
+			if err == io.EOF {
+				continue
+			}
+			log.Printf("Serial read error: %v", err)
+			time.Sleep(time.Second)
+			continue
+		}
+		if n == 0 {
+			continue
+		}
+		buf = append(buf, b[0])
+
+		for len(buf) > 0 {
+			if len(buf) < 2 {
+				break
+			}
+			if buf[0] != start1 || buf[1] != start2 {
+				ch := buf[0]
+				buf = buf[1:]
+				if ch == '\n' {
+					handleLine(logBuf.String())
+					logBuf.Reset()
+				} else if ch != '\r' {
+					logBuf.WriteByte(ch)
+				}
+				continue
+			}
+			if len(buf) < headerLen {
+				break
+			}
+			length := int(buf[2])<<8 | int(buf[3])
+			if length <= 0 || length > maxSize {
+				buf = buf[1:]
+				continue
+			}
+			if len(buf) < headerLen+length {
+				break
+			}
+			payload := buf[headerLen : headerLen+length]
+			if nm != nil {
+				if ni, err := decoder.DecodeNodeInfo(payload, "latest"); err == nil {
+					nm.UpdateFromProto(ni)
+					if handleNodeInfo != nil {
+						handleNodeInfo(ni)
+					}
+					if debug {
+						log.Printf("[DEBUG nodemap] learned %s => %s/%s", fmt.Sprintf("0x%x", ni.GetNum()), ni.GetUser().GetLongName(), ni.GetUser().GetShortName())
+					}
+				}
+			}
+			buf = buf[headerLen+length:]
+		}
 	}
 }
 
