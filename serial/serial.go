@@ -46,6 +46,15 @@ func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map,
 	}
 	defer port.Close()
 
+	readLoop(port, portName, baud, debug, nm,
+		handleNodeInfo, handleTelemetry, handleText, publish)
+}
+
+func readLoop(port serial.Port, portName string, baud int, debug bool, nm *nodemap.Map,
+	handleNodeInfo func(*latestpb.NodeInfo),
+	handleTelemetry func(*latestpb.Telemetry),
+	handleText func(string),
+	publish func(string)) {
 	log.Printf("Listening on serial %s at %d baud", portName, baud)
 
 	const (
