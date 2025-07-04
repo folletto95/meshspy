@@ -22,7 +22,7 @@ var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 // ReadLoop apre la porta seriale e decodifica i messaggi protobuf in arrivo.
 // Invoca i callback forniti per NodeInfo, Telemetry e messaggi di testo.
 // Inoltre pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
-func ReadLoop(portName string, baud int, debug bool, nm *nodemap.Map,
+func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleTelemetry func(*latestpb.Telemetry),
 	handleText func(string),
@@ -77,7 +77,7 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, nm *nodem
 		}
 
 		if nm != nil {
-			if ni, err := decoder.DecodeNodeInfo([]byte(line), "latest"); err == nil {
+			if ni, err := decoder.DecodeNodeInfo([]byte(line), protoVersion); err == nil {
 				nm.UpdateFromProto(ni)
 				if handleNodeInfo != nil {
 					handleNodeInfo(ni)
@@ -88,21 +88,21 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, nm *nodem
 				return
 			}
 		}
-		if tel, err := decoder.DecodeTelemetry([]byte(line), "latest"); err == nil {
+		if tel, err := decoder.DecodeTelemetry([]byte(line), protoVersion); err == nil {
 			if handleTelemetry != nil {
 				handleTelemetry(tel)
 			}
 			return
 		}
 
-		if txt, err := decoder.DecodeText([]byte(line), "latest"); err == nil {
+		if txt, err := decoder.DecodeText([]byte(line), protoVersion); err == nil {
 			if handleText != nil {
 				handleText(txt)
 			}
 			return
 		}
 
-		if tele, err := decoder.DecodeTelemetry([]byte(line), "latest"); err == nil {
+		if tele, err := decoder.DecodeTelemetry([]byte(line), protoVersion); err == nil {
 			if handleTelemetry != nil {
 				handleTelemetry(tele)
 			}
@@ -172,7 +172,7 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, nm *nodem
 			}
 			payload := buf[headerLen : headerLen+length]
 			if nm != nil {
-				if ni, err := decoder.DecodeNodeInfo(payload, "latest"); err == nil {
+				if ni, err := decoder.DecodeNodeInfo(payload, protoVersion); err == nil {
 					nm.UpdateFromProto(ni)
 					if handleNodeInfo != nil {
 						handleNodeInfo(ni)
@@ -183,11 +183,11 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, nm *nodem
 				}
 			}
 
-			if txt, err := decoder.DecodeText(payload, "latest"); err == nil {
+			if txt, err := decoder.DecodeText(payload, protoVersion); err == nil {
 				if handleText != nil {
 					handleText(txt)
 				}
-			} else if tele, err := decoder.DecodeTelemetry(payload, "latest"); err == nil {
+			} else if tele, err := decoder.DecodeTelemetry(payload, protoVersion); err == nil {
 				if handleTelemetry != nil {
 					handleTelemetry(tele)
 				}
