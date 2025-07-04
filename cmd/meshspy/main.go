@@ -125,10 +125,12 @@ func main() {
 		fmt.Printf("ℹ️  Info dispositivo Meshtastic:\n%s\n", output)
 	}
 
+	var protoVer string
 	info, err := mqttpkg.GetLocalNodeInfo(cfg.SerialPort)
 	if err != nil {
 		log.Printf("⚠️ Lettura info nodo fallita: %v", err)
 	} else {
+		protoVer = mqttpkg.ProtoVersionForFirmware(info.FirmwareVersion)
 		if err := mqttpkg.SaveNodeInfo(info, "nodes.json"); err != nil {
 			log.Printf("⚠️ Salvataggio info nodo fallito: %v", err)
 		}
@@ -161,7 +163,7 @@ func main() {
 
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
-		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, nodes, func(ni *latestpb.NodeInfo) {
+		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, protoVer, nodes, func(ni *latestpb.NodeInfo) {
 			info := mqttpkg.NodeInfoFromProto(ni)
 			if info != nil {
 				if err := nodeStore.Upsert(info); err != nil {
