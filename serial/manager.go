@@ -95,12 +95,12 @@ func (m *Manager) SendTextMessage(text string) error {
 
 // ReadLoop starts reading from the serial port using the same logic as the
 // standalone ReadLoop function, but without reopening the port.
-func (m *Manager) ReadLoop(debug bool, nm *nodemap.Map,
+func (m *Manager) ReadLoop(debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleTelemetry func(*latestpb.Telemetry),
 	handleText func(string),
 	publish func(string)) {
 
-	readLoop(m.port, m.name, m.baud, debug, nm,
+	readLoop(m.port, m.name, m.baud, debug, protoVersion, nm,
 		handleNodeInfo, handleTelemetry, handleText, publish)
 }

@@ -46,11 +46,11 @@ func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *no
 	}
 	defer port.Close()
 
-	readLoop(port, portName, baud, debug, nm,
+	readLoop(port, portName, baud, debug, protoVersion, nm,
 		handleNodeInfo, handleTelemetry, handleText, publish)
 }
 
-func readLoop(port serial.Port, portName string, baud int, debug bool, nm *nodemap.Map,
+func readLoop(port serial.Port, portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleTelemetry func(*latestpb.Telemetry),
 	handleText func(string),
