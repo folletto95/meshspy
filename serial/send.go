@@ -9,7 +9,7 @@ import (
 
 // SendTextMessage sends a text message to the primary channel via meshtastic-go.
 func SendTextMessage(port, text string) error {
-	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "--sendtext", text)
+	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "message", "send", "-m", text)
 	log.Printf("\u2191 sending command: %s", strings.Join(cmd.Args, " "))
 	output, err := cmd.CombinedOutput()
 	if err != nil {

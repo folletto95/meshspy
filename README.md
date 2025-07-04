@@ -53,7 +53,7 @@ During start-up the service prints information from `meshtastic-go` and begins
 streaming data from the serial port to the configured MQTT topic. When the
 `SEND_ALIVE_ON_START` environment variable is set to `true`, the service also
 sends a `MeshSpy Alive` message on the configured MQTT topic and to the node
-itself using `meshtastic-go --sendtext`, so other components can detect that
+itself using `meshtastic-go message send -m`, so other components can detect that
 the service is running and nodes are reached.
 
 

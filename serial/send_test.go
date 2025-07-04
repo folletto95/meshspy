@@ -23,7 +23,7 @@ func TestSendTextMessage(t *testing.T) {
 		t.Fatalf("failed to read output: %v", err)
 	}
 	got := strings.TrimSpace(string(data))
-	want := "--port ttyS1 --sendtext hello world"
+	want := "--port ttyS1 message send -m hello world"
 	if got != want {
 		t.Fatalf("unexpected args: got %q want %q", got, want)
 	}
