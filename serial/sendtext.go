@@ -7,9 +7,9 @@ import (
 )
 
 // SendText uses meshtastic-go to send a text message over the mesh network.
-// It executes: meshtastic-go --port <port> --sendtext <msg>.
+// It executes: meshtastic-go --port <port> message send -m <msg>.
 func SendText(port, msg string) error {
-	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "--sendtext", msg)
+	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "message", "send", "-m", msg)
 	log.Printf("\u2191 sending command: %s", strings.Join(cmd.Args, " "))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
