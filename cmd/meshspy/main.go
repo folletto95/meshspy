@@ -65,24 +65,30 @@ func main() {
 	}
 
 	// Sottoscrivi al topic dei comandi e inoltra i messaggi sulla seriale
+	var portMgr *serial.Manager
+
 	token := client.Subscribe(cfg.CommandTopic, 0, func(c paho.Client, m paho.Message) {
 		msg := string(m.Payload())
+		if portMgr == nil {
+			log.Printf("❌ Porta seriale non inizializzata")
+			return
+		}
 		switch {
 		case msg == "sendhello":
-			if err := serial.SendTextMessage(cfg.SerialPort, welcomeMessage); err != nil {
+			if err := portMgr.SendTextMessage(welcomeMessage); err != nil {
 				log.Printf("❌ Errore invio messaggio standard: %v", err)
 			} else {
 				log.Printf("✅ Messaggio standard inviato")
 			}
 		case strings.HasPrefix(msg, "send:"):
 			text := strings.TrimPrefix(msg, "send:")
-			if err := serial.SendTextMessage(cfg.SerialPort, text); err != nil {
+			if err := portMgr.SendTextMessage(text); err != nil {
 				log.Printf("❌ Errore invio messaggio personalizzato: %v", err)
 			} else {
 				log.Printf("✅ Messaggio personalizzato inviato: %s", text)
 			}
 		default:
-			if err := serial.Send(cfg.SerialPort, cfg.BaudRate, msg); err != nil {
+			if err := portMgr.Send(msg); err != nil {
 				log.Printf("❌ Errore invio seriale: %v", err)
 			} else {
 				log.Printf("➡️  Comando inoltrato alla seriale: %s", m.Payload())
@@ -161,9 +167,15 @@ func main() {
 		log.Printf("✅ Messaggio di benvenuto inviato")
 	}
 
+	portMgr, err = serial.OpenManager(cfg.SerialPort, cfg.BaudRate)
+	if err != nil {
+		log.Fatalf("❌ apertura porta seriale: %v", err)
+	}
+	defer portMgr.Close()
+
 	// Avvia la lettura dalla porta seriale in un goroutine
 	go func() {
-		serial.ReadLoop(cfg.SerialPort, cfg.BaudRate, cfg.Debug, protoVer, nodes, func(ni *latestpb.NodeInfo) {
+		portMgr.ReadLoop(cfg.Debug, protoVer, nodes, func(ni *latestpb.NodeInfo) {
 			info := mqttpkg.NodeInfoFromProto(ni)
 			if info != nil {
 				if err := nodeStore.Upsert(info); err != nil {
