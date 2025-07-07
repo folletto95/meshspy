@@ -2,9 +2,13 @@
 package config
 
 import (
+	"errors"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
+
+	"go.bug.st/serial/enumerator"
 )
 
 // Config holds the application configuration loaded from environment variables.
@@ -52,8 +56,19 @@ func Load() Config {
 		enableGUI = false
 	}
 
+	serialPort := getEnv("SERIAL_PORT", "/dev/ttyUSB0")
+	if !portExists(serialPort) {
+		log.Printf("⚠️  porta seriale %s non trovata, ricerca automatica", serialPort)
+		if p, err := autoDetectPort(); err == nil {
+			serialPort = p
+			log.Printf("✅ porta seriale %s selezionata", serialPort)
+		} else {
+			log.Printf("⚠️  nessuna porta seriale trovata: %v", err)
+		}
+	}
+
 	return Config{
-		SerialPort:   getEnv("SERIAL_PORT", "/dev/ttyUSB0"),
+		SerialPort:   serialPort,
 		BaudRate:     baud,
 		MQTTBroker:   getEnv("MQTT_BROKER", "tcp://mqtt-broker:1883"),
 		MQTTTopic:    getEnv("MQTT_TOPIC", "meshspy/nodo/connesso"),
@@ -73,4 +88,38 @@ func getEnv(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func portExists(path string) bool {
+	if path == "" {
+		return false
+	}
+	if _, err := os.Stat(path); err == nil {
+		return true
+	}
+	return false
+}
+
+func autoDetectPort() (string, error) {
+	ports, err := enumerator.GetDetailedPortsList()
+	if err != nil {
+		return "", err
+	}
+	for _, p := range ports {
+		if p.IsUSB {
+			if portExists(p.Name) {
+				return p.Name, nil
+			}
+		}
+	}
+	// fallback search by glob patterns
+	patterns := []string{"/dev/ttyACM*", "/dev/ttyUSB*"}
+	for _, pat := range patterns {
+		if matches, _ := filepath.Glob(pat); len(matches) > 0 {
+			if portExists(matches[0]) {
+				return matches[0], nil
+			}
+		}
+	}
+	return "", errors.New("serial port not found")
 }
