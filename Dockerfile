@@ -32,7 +32,7 @@ COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 
-# Copia i sorgenti principali
+# Copia i sorgenti principali  
 COPY . .
 
 # ✅ COMPILA meshspy
