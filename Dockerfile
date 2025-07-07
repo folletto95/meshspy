@@ -79,9 +79,9 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ###########################
 
 # Copia il file .env.runtime nel container (se presente)
-RUN echo "copio .env.runtime"
-COPY .env.runtime /app/.env.runtime
-RUN echo "copiato .env.runtime"
+#RUN echo "copio .env.runtime"
+#COPY .env.runtime /app/.env.runtime
+#RUN echo "copiato .env.runtime"
 RUN echo "copio .env.example"
 COPY .env.example /app/.env.example
 RUN echo "copiato .env.example"
