@@ -17,21 +17,22 @@ import (
 // port once and allows sending commands and starting a read loop
 // without reopening the device.
 type Manager struct {
-	name string
-	baud int
-	port seriallib.Port
-	mu   sync.Mutex
+	name  string
+	baud  int
+	port  seriallib.Port
+	proto string
+	mu    sync.Mutex
 }
 
 // OpenManager opens the given serial port at the specified baud rate
 // and returns a Manager that can be used for reading and writing.
-func OpenManager(portName string, baud int) (*Manager, error) {
+func OpenManager(portName string, baud int, protoVersion string) (*Manager, error) {
 	p, err := seriallib.Open(portName, &seriallib.Mode{BaudRate: baud})
 	if err != nil {
 		return nil, err
 	}
 	p.SetReadTimeout(5 * time.Second)
-	return &Manager{name: portName, baud: baud, port: p}, nil
+	return &Manager{name: portName, baud: baud, port: p, proto: protoVersion}, nil
 }
 
 // Close closes the underlying serial port.
@@ -83,8 +84,14 @@ func (m *Manager) SendTextMessage(text string) error {
 		return err
 	}
 	frame := make([]byte, 4+len(payload))
-	frame[0] = 0x94
-	frame[1] = 0xC3
+	start1 := byte(0x94)
+	start2 := byte(0xC3)
+	if m.proto == "2.1" {
+		start1 = 0x44
+		start2 = 0x03
+	}
+	frame[0] = start1
+	frame[1] = start2
 	frame[2] = byte(len(payload) >> 8)
 	frame[3] = byte(len(payload))
 	copy(frame[4:], payload)
