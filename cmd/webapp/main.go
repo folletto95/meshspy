@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	mqttpkg "meshspy/client"
 	"meshspy/config"
@@ -65,10 +66,35 @@ func main() {
 			log.Printf("upgrade error: %v", err)
 			return
 		}
+
+		// Channel used to queue messages coming from the websocket before
+		// publishing them to MQTT. The small buffer (10) prevents slow
+		// MQTT publishes from blocking the websocket reader.
+		sendCh := make(chan []byte, 10)
+
 		log.Printf("🔌 websocket client %s connected", r.RemoteAddr)
 		defer func() {
 			log.Printf("🔌 websocket client %s disconnected", r.RemoteAddr)
+			close(sendCh) // stop publisher goroutine
 			conn.Close()
+		}()
+
+		// Goroutine responsible for publishing messages received from the
+		// websocket to MQTT. It exits when sendCh is closed.
+		go func() {
+			for msg := range sendCh {
+				t := client.Publish(cfg.CommandTopic, 0, false, msg)
+				// Wait for at most 3 seconds for publish to complete.
+				if !t.WaitTimeout(3 * time.Second) {
+					log.Printf("MQTT publish timeout")
+					continue
+				}
+				if t.Error() != nil {
+					log.Printf("MQTT publish error: %v", t.Error())
+				} else {
+					log.Printf("⬆️ MQTT publish to %s: %s", cfg.CommandTopic, msg)
+				}
+			}
 		}()
 
 		token := client.Subscribe(cfg.MQTTTopic, 0, func(c mqtt.Client, m mqtt.Message) {
@@ -95,12 +121,13 @@ func main() {
 				break
 			}
 			log.Printf("➡️  from web client: %s", message)
-			t := client.Publish(cfg.CommandTopic, 0, false, message)
-			t.Wait()
-			if t.Error() != nil {
-				log.Printf("MQTT publish error: %v", t.Error())
-			} else {
-				log.Printf("⬆️ MQTT publish to %s: %s", cfg.CommandTopic, message)
+			// Queue the message for publishing. If the buffer is full
+			// the message is dropped to avoid blocking the websocket
+			// reader.
+			select {
+			case sendCh <- message:
+			default:
+				log.Printf("publish queue full, dropping message")
 			}
 			if err := conn.WriteMessage(websocket.TextMessage, append([]byte("echo: "), message...)); err != nil {
 				log.Printf("websocket echo error: %v", err)
