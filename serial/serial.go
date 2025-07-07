@@ -102,13 +102,6 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 			return
 		}
 
-		if tele, err := decoder.DecodeTelemetry([]byte(line), protoVersion); err == nil {
-			if handleTelemetry != nil {
-				handleTelemetry(tele)
-			}
-			return
-		}
-
 		node := parseNodeName(line)
 		if node == "" || node == "0x0" {
 			if debug {
