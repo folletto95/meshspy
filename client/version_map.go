@@ -10,9 +10,15 @@ func ProtoVersionForFirmware(fw string) string {
 	if fw == "" {
 		return "latest"
 	}
-	// example: 2.1.x might require old proto, here we just default
-	if strings.HasPrefix(fw, "2.") {
-		return "latest"
+
+	parts := strings.SplitN(fw, ".", 3)
+	if len(parts) >= 2 {
+		major, minor := parts[0], parts[1]
+		// Firmware 2.1.x uses the older protobuf schema
+		if major == "2" && minor == "1" {
+			return "2.1"
+		}
 	}
+
 	return "latest"
 }
