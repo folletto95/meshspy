@@ -39,6 +39,9 @@ func (m *Map) UpdateFromProto(ni *latestpb.NodeInfo) {
 	if ni == nil || ni.User == nil {
 		return
 	}
+	if ni.GetNum() == 0 && ni.User.GetLongName() == "" && ni.User.GetShortName() == "" {
+		return
+	}
 	m.Update(ni.GetNum(), ni.User.GetLongName(), ni.User.GetShortName())
 }
 
