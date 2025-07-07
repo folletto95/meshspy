@@ -39,9 +39,10 @@ func Run(cfg config.Config, nodeStore *storage.NodeStore) {
 	sendBtn := widget.NewButton("Send", nil)
 
 	var (
-		mgr *serial.Manager
-		mu  sync.Mutex
-		nm  = nodemap.New()
+		mgr  *serial.Manager
+		mu   sync.Mutex
+		nm   = nodemap.New()
+		list *widget.List
 	)
 
 	// display nodes from the DB in a scrolling list
@@ -88,7 +89,7 @@ func Run(cfg config.Config, nodeStore *storage.NodeStore) {
 				info := mqttpkg.NodeInfoFromProto(ni)
 				if info != nil {
 					if err := nodeStore.Upsert(info); err == nil {
-						a.QueueUpdate(updateNodes)
+						updateNodes()
 					}
 				}
 			},
@@ -96,15 +97,13 @@ func Run(cfg config.Config, nodeStore *storage.NodeStore) {
 				info := mqttpkg.NodeInfoFromMyInfo(mi)
 				if info != nil {
 					if err := nodeStore.Upsert(info); err == nil {
-						a.QueueUpdate(updateNodes)
+						updateNodes()
 					}
 				}
 			},
 			nil,
 			func(txt string) {
-				a.QueueUpdate(func() {
-					messages.SetText(messages.Text + txt + "\n")
-				})
+				messages.SetText(messages.Text + txt + "\n")
 			},
 			func(payload string) {})
 	}

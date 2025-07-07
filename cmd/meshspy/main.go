@@ -69,10 +69,14 @@ func main() {
 	}
 
 	if *msg != "" {
-		if err := serial.SendTextMessageTo(cfg.SerialPort, *dest, *msg); err != nil {
+		if err := serial.SendText(cfg.SerialPort, *msg); err != nil {
 			log.Fatalf("❌ Errore invio messaggio: %v", err)
 		}
-		log.Printf("✅ Messaggio inviato a %s", *dest)
+		if *dest != "" {
+			log.Printf("✅ Messaggio inviato a %s", *dest)
+		} else {
+			log.Printf("✅ Messaggio inviato")
+		}
 		return
 	}
 
