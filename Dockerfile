@@ -27,7 +27,7 @@ RUN echo "🔧 Installing build deps depending on base image: ${BASE_IMAGE}" && 
         echo "❌ Unsupported package manager" && exit 1; \
     fi
 
-# Scarica i moduli Go del progetto principale
+# Scarica i moduli Go del progetto principale  
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
