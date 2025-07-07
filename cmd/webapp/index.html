@@ -4,7 +4,68 @@
 <meta charset="UTF-8">
 <title>MeshSpy Messages</title>
 <style>
-#messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 5px; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: #f5f5f7;
+  color: #333;
+}
+
+h1 {
+  color: #5865F2;
+  margin-bottom: 10px;
+}
+
+#messages {
+  height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background: #fff;
+  margin-bottom: 20px;
+}
+
+#nodes {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+}
+
+#nodes li {
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+input[type="text"] {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  background: #5865F2;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #563ACC;
+}
+
+#defaultButton {
+  margin-left: 10px;
+}
 </style>
 </head>
 <body>
