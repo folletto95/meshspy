@@ -28,7 +28,6 @@ import (
 const (
 	welcomeMessage = "Ciao da MeshSpy, presto (spero) per tutti"
 	aliveMessage   = "MeshSpy Alive"
-
 )
 
 // Version of the MeshSpy program. This value can be overridden at build time
@@ -70,7 +69,7 @@ func main() {
 	}
 
 	if *msg != "" {
-		if err := mqtt.SendText(cfg.SerialPort, *dest, *msg); err != nil {
+		if err := serial.SendTextMessageTo(cfg.SerialPort, *dest, *msg); err != nil {
 			log.Fatalf("❌ Errore invio messaggio: %v", err)
 		}
 		log.Printf("✅ Messaggio inviato a %s", *dest)
