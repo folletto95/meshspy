@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-        "github.com/joho/godotenv" // ← used to read .env files
+	"github.com/joho/godotenv" // ← used to read .env files
 
 	mqttpkg "meshspy/client"
 	"meshspy/config"
@@ -34,7 +34,7 @@ const (
 var Version = "dev"
 
 func init() {
-        // Load the version from the .env.build file if present
+	// Load the version from the .env.build file if present
 	if err := godotenv.Load(".env.build"); err == nil {
 		if Version == "dev" {
 			if v := os.Getenv("MESHSPY_VERSION"); v != "" {
@@ -52,17 +52,21 @@ func main() {
 	dest := flag.String("dest", "", "Nodo destinatario (opzionale)")
 	flag.Parse()
 
-        // Load .env.runtime if present
+	// Load .env.runtime if present
 	if err := godotenv.Load(".env.runtime"); err != nil {
 		log.Printf("⚠️  Nessun file .env.runtime trovato o errore di caricamento: %v", err)
 	}
 
 	log.Println("🚀 MeshSpy avviato con successo! Inizializzazione in corso..")
 
-        // Load configuration from environment variables
+	// Load configuration from environment variables
 	cfg := config.Load()
 	nodes := nodemap.New()
 	mgmt := mgmtapi.New(cfg.MgmtURL)
+
+	// Print MQTT credentials so they can be verified before connecting
+	log.Printf("ℹ️  MQTT user: %s", cfg.User)
+	log.Printf("ℹ️  MQTT password: %s", cfg.Password)
 
 	nodeDB := os.Getenv("NODE_DB_PATH")
 	if nodeDB == "" {
@@ -86,7 +90,7 @@ func main() {
 		return
 	}
 
-        // Connect to the MQTT broker
+	// Connect to the MQTT broker
 	client, err := mqttpkg.ConnectMQTT(cfg)
 	if err != nil {
 		log.Fatalf("❌ Errore connessione MQTT: %v", err)
@@ -99,7 +103,7 @@ func main() {
 		log.Printf("✅ Messaggio Alive inviato su '%s'", cfg.MQTTTopic)
 	}
 
-        // Subscribe to the command topic and forward messages over serial
+	// Subscribe to the command topic and forward messages over serial
 	var portMgr *serial.Manager
 
 	token := client.Subscribe(cfg.CommandTopic, 0, func(c paho.Client, m paho.Message) {
@@ -137,16 +141,16 @@ func main() {
 	}
 	log.Printf("✅ in ascolto su topic comandi %s", cfg.CommandTopic)
 
-        // Initialize the exit channel to handle termination signals
+	// Initialize the exit channel to handle termination signals
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-        // 📡 Wait for the serial port to be available before running meshtastic-go
+	// 📡 Wait for the serial port to be available before running meshtastic-go
 	if err := serial.WaitForSerial(cfg.SerialPort, 30*time.Second); err != nil {
 		log.Fatalf("❌ Porta seriale %s non disponibile: %v", cfg.SerialPort, err)
 	}
 
-        // Send an Alive message to the node if requested
+	// Send an Alive message to the node if requested
 	if cfg.SendAlive {
 		if err := serial.SendTextMessage(cfg.SerialPort, aliveMessage); err != nil {
 			log.Printf("⚠️  Errore invio messaggio Alive al nodo: %v", err)
@@ -155,7 +159,7 @@ func main() {
 		}
 	}
 
-        // 📡 Print info from meshtastic-go (if available)
+	// 📡 Print info from meshtastic-go (if available)
 
 	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", cfg.SerialPort, "info")
 	output, err := cmd.CombinedOutput()
@@ -216,7 +220,7 @@ func main() {
 	}
 	defer portMgr.Close()
 
-        // Start reading from the serial port in a goroutine
+	// Start reading from the serial port in a goroutine
 	go func() {
 		portMgr.ReadLoop(cfg.Debug, protoVer, nodes, func(ni *latestpb.NodeInfo) {
 			info := mqttpkg.NodeInfoFromProto(ni)
@@ -239,8 +243,8 @@ func main() {
 				}
 			}
 		}, nil, nil, func(data string) {
-                        // Publish every received message on the MQTT topic
-                        token := client.Publish(cfg.MQTTTopic, 0, false, data)
+			// Publish every received message on the MQTT topic
+			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()
 			if token.Error() != nil {
 				log.Printf("❌ Errore pubblicazione MQTT: %v", token.Error())
@@ -250,7 +254,7 @@ func main() {
 		})
 	}()
 
-        // Keep the program running until an exit signal is received
+	// Keep the program running until an exit signal is received
 	<-sigs
 	log.Println("👋 Uscita in corso...")
 	time.Sleep(time.Second)
