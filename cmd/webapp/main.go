@@ -60,6 +60,17 @@ func main() {
 		json.NewEncoder(w).Encode(nodes)
 	})
 
+	http.HandleFunc("/positions", func(w http.ResponseWriter, r *http.Request) {
+		nodeID := r.URL.Query().Get("node")
+		pos, err := nodeStore.Positions(nodeID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(pos)
+	})
+
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {

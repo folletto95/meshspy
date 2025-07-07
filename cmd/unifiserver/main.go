@@ -25,6 +25,18 @@ func newServer(m mqtt.Client, cfg config.Config, store *storage.NodeStore) *apiS
 	return &apiServer{mqtt: m, cfg: cfg, store: store}
 }
 
+// listPositions returns stored node positions as JSON.
+func (s *apiServer) listPositions(w http.ResponseWriter, r *http.Request) {
+	nodeID := r.URL.Query().Get("node")
+	pos, err := s.store.Positions(nodeID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pos)
+}
+
 // listNodes returns the known nodes as JSON.
 func (s *apiServer) listNodes(w http.ResponseWriter, r *http.Request) {
 	nodes, err := s.store.List()
@@ -35,7 +47,6 @@ func (s *apiServer) listNodes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(nodes)
 }
-
 
 // upsertNode stores a NodeInfo received in the request body.
 func (s *apiServer) upsertNode(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +119,7 @@ func main() {
 		}
 		srv.listNodes(w, r)
 	})
+	http.HandleFunc("/api/positions", srv.listPositions)
 	http.HandleFunc("/api/send", srv.sendCommand)
 
 	port := os.Getenv("SERVER_PORT")
