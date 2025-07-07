@@ -5,7 +5,10 @@ import "testing"
 func TestParseNodesOutput(t *testing.T) {
 	sample := "| 1773582993     | HB9ODI-Scereda 900m| N/A            | " +
 		"950            | 458915999      | 89875399       |\n"
-	nodes := ParseNodesOutput([]byte(sample))
+	nodes, err := ParseNodesOutput([]byte(sample))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if len(nodes) != 1 {
 		t.Fatalf("expected 1 node, got %d", len(nodes))
 	}
