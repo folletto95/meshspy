@@ -35,6 +35,17 @@ BUILD_PLATFORMS=linux/amd64 ./build.sh
 
 When unset the script builds images for multiple architectures.
 
+Supported platforms:
+
+```
+linux/amd64
+linux/arm64
+linux/arm/v7
+linux/arm/v6
+linux/386
+```
+When unset the script builds images for multiple architectures.
+
 ### Building binaries
 
 To produce standalone binaries for Linux, Windows and macOS, run:
