@@ -5,7 +5,7 @@
 ###########################
 
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-golang:1.21-alpine} AS builder
+FROM ${BASE_IMAGE:-golang:1.22-alpine} AS builder
 
 ARG TARGETOS
 ARG TARGETARCH

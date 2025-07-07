@@ -62,7 +62,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
     -v "$PWD":/app \
     -v "$PWD/.proto_copy":/proto_copy \
     -w /app \
-    golang:1.21-bullseye bash -c '
+    golang:1.22-bullseye bash -c '
       set -e
       apt-get update
       apt-get install -y unzip curl git protobuf-compiler
@@ -88,12 +88,12 @@ fi
 
 # Verifica o rigenera go.mod
 REQUIRES_GO=$(grep '^go [0-9]\.' go.mod 2>/dev/null | cut -d' ' -f2 || echo "")
-if [[ ! -f go.mod || "$REQUIRES_GO" != "1.21" ]]; then
+if [[ ! -f go.mod || "$REQUIRES_GO" != "1.22" ]]; then
   echo "🛠 Generating or fixing go.mod and go.sum…"
   rm -f go.mod go.sum
   docker run --rm \
     -v "${PWD}":/app -w /app \
-    golang:1.21-alpine sh -c "\
+    golang:1.22-alpine sh -c "\
       go mod init ${IMAGE#*/} && \
       go get github.com/eclipse/paho.mqtt.golang@v1.5.0 github.com/tarm/serial@latest google.golang.org/protobuf@v1.30.0 && \
       go mod tidy"
@@ -109,9 +109,9 @@ docker buildx inspect --bootstrap
 # Se BUILD_PLATFORMS è impostato, buildiamo solo per quelle
 if [[ -n "$BUILD_PLATFORMS" ]]; then
   echo "🚀 Build personalizzato per: ${BUILD_PLATFORMS}"
-  BASE="golang:1.21-alpine"
+  BASE="golang:1.22-alpine"
   if [[ "$BUILD_PLATFORMS" == "$ARCH_ARMV6" ]]; then
-    BASE="arm32v6/golang:1.21.0-alpine"
+    BASE="arm32v6/golang:1.22.0-alpine"
   fi
   docker buildx build \
     --platform "${BUILD_PLATFORMS}" \
@@ -131,7 +131,7 @@ docker buildx build \
   -t "${IMAGE}:${TAG}-armv6" \
   --build-arg GOARCH=arm \
   --build-arg GOARM=6 \
-  --build-arg BASE_IMAGE=arm32v6/golang:1.21.0-alpine \
+  --build-arg BASE_IMAGE=arm32v6/golang:1.22.0-alpine \
   .
 
 # 🚀 Build multipiattaforma per le altre architetture
@@ -140,7 +140,7 @@ docker buildx build \
   --platform "${PLATFORMS_PARALLEL}" \
   --push \
   -t "${IMAGE}:${TAG}" \
-  --build-arg BASE_IMAGE=golang:1.21-alpine \
+  --build-arg BASE_IMAGE=golang:1.22-alpine \
   .
 
 # 🔗 Unione ARMv6 nel manifest principale
