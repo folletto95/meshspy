@@ -19,7 +19,11 @@
 <button id="defaultButton" type="button">Send default</button>
 <script>
 const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+ws.onopen = () => console.log("WebSocket connection opened");
+ws.onerror = (ev) => console.error("WebSocket error", ev);
+ws.onclose = () => console.log("WebSocket connection closed");
 ws.onmessage = (ev) => {
+  console.log("WebSocket message", ev.data);
   const msgEl = document.createElement("div");
   msgEl.textContent = ev.data;
   document.getElementById("messages").appendChild(msgEl);
@@ -28,6 +32,7 @@ ws.onmessage = (ev) => {
 document.getElementById("form").onsubmit = (ev) => {
   ev.preventDefault();
   const text = document.getElementById("text");
+  console.log("Sending message", text.value);
   ws.send(text.value);
   const echo = document.createElement("div");
   echo.textContent = "You: " + text.value;
@@ -36,6 +41,7 @@ document.getElementById("form").onsubmit = (ev) => {
 };
 
 document.getElementById("defaultButton").onclick = () => {
+  console.log("Sending default message");
   ws.send("Hello from web");
   const echo = document.createElement("div");
   echo.textContent = "You: Hello from web";

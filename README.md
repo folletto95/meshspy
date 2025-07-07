@@ -86,6 +86,7 @@ container with some default environment variables:
 - `BAUD_RATE=115200`
 - `MQTT_BROKER=tcp://smpisa.ddns.net:1883`
 - `MQTT_TOPIC=meshspy`
+-  (avoid wildcards here, as publishing to topics like `mesh/#` is not supported)
 - `MQTT_CLIENT_ID=meshspy-kali`
 - `MQTT_USER=testmeshspy`
 - `MQTT_PASS=test1`
