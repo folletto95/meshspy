@@ -4,14 +4,12 @@ package mqtt
 import (
 	"bufio"
 	"bytes"
-	//"log"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
-	//"strings"
-	//"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -177,12 +175,22 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 func ConnectMQTT(cfg config.Config) (mqtt.Client, error) {
 	opts := mqtt.NewClientOptions().
 		AddBroker(cfg.MQTTBroker).
-		SetClientID(cfg.ClientID)
+		SetClientID(cfg.ClientID).
+		SetAutoReconnect(true).
+		SetConnectRetry(true).
+		SetConnectRetryInterval(5 * time.Second)
 
 	if cfg.User != "" {
 		opts.SetUsername(cfg.User)
 		opts.SetPassword(cfg.Password)
 	}
+
+	opts.SetConnectionLostHandler(func(c mqtt.Client, err error) {
+		log.Printf("⚠️ MQTT connection lost: %v", err)
+	})
+	opts.SetOnConnectHandler(func(c mqtt.Client) {
+		log.Printf("✅ MQTT connection established")
+	})
 
 	client := mqtt.NewClient(opts)
 	token := client.Connect()
