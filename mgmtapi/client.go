@@ -9,6 +9,7 @@ import (
 	"time"
 
 	mqttpkg "meshspy/client"
+	"meshspy/storage"
 )
 
 // Client communicates with the management server HTTP API.
@@ -100,4 +101,28 @@ func (c *Client) ListNodes() ([]*mqttpkg.NodeInfo, error) {
 		return nil, err
 	}
 	return nodes, nil
+}
+
+// ListPositions retrieves node positions from the server.
+func (c *Client) ListPositions(nodeID string) ([]storage.NodePosition, error) {
+	if c == nil {
+		return nil, nil
+	}
+	url := c.baseURL + "/api/positions"
+	if nodeID != "" {
+		url += "?node=" + nodeID
+	}
+	resp, err := c.http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("server returned %s", resp.Status)
+	}
+	var pos []storage.NodePosition
+	if err := json.NewDecoder(resp.Body).Decode(&pos); err != nil {
+		return nil, err
+	}
+	return pos, nil
 }
