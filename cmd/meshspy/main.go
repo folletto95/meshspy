@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/joho/godotenv" // ← aggiunto per leggere il file .env
+	"github.com/joho/godotenv" // ← per leggere i file .env
 
 	mqttpkg "meshspy/client"
 	"meshspy/config"
@@ -32,6 +32,17 @@ const (
 // Version of the MeshSpy program. This value can be overridden at build time
 // using: go build -ldflags="-X main.Version=x.y.z"
 var Version = "dev"
+
+func init() {
+	// Carica la versione dal file .env.build se presente
+	if err := godotenv.Load(".env.build"); err == nil {
+		if Version == "dev" {
+			if v := os.Getenv("MESHSPY_VERSION"); v != "" {
+				Version = v
+			}
+		}
+	}
+}
 
 func main() {
 	log.Println("🔥 MeshSpy avviamento iniziato...")
