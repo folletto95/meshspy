@@ -125,21 +125,6 @@ the host. Each time a
 `NodeInfo` protobuf message is received it is converted and inserted or updated
 in this database so that external tools can inspect the mesh topology.
 
-### `start_berry5.sh` helper
-
-Owners of a Raspberry&nbsp;Pi&nbsp;5 can use the `start_berry5.sh` script. It
-launches the container for the arm64 architecture and stores the node database
-in the `meshspy_data` directory on the host.
-
-Start it with the defaults:
-
-```bash
-./start_berry5.sh
-```
-
-As with the generic helper you can combine `--clean` and `--log` to refresh the
-image and continuously follow the logs.
-
 ## Web Application
 
 A simple web interface lives in `cmd/webapp`. It serves an HTML page and
