@@ -20,9 +20,16 @@ WORKDIR /app
 # 🔁 Installa git condizionalmente (Alpine vs Debian)
 RUN echo "🔧 Installing build deps depending on base image: ${BASE_IMAGE}" && \
     if command -v apt-get >/dev/null 2>&1; then \
-        apt-get update && apt-get install -y git build-essential sqlite3 libsqlite3-dev && rm -rf /var/lib/apt/lists/*; \
+        apt-get update && apt-get install -y \
+            git build-essential sqlite3 libsqlite3-dev \
+            libgl1-mesa-dev libxi-dev libx11-dev libxcursor-dev \
+            libxrandr-dev libxinerama-dev xorg-dev && \
+        rm -rf /var/lib/apt/lists/*; \
     elif command -v apk >/dev/null 2>&1; then \
-        apk add --no-cache git build-base sqlite-dev; \
+        apk add --no-cache \
+            git build-base sqlite-dev mesa-dev \
+            libx11-dev libxi-dev libxcursor-dev \
+            libxrandr-dev libxinerama-dev; \
     else \
         echo "❌ Unsupported package manager" && exit 1; \
     fi
