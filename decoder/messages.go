@@ -9,12 +9,15 @@ import (
 
 // stripFrame removes the radio framing bytes if present.
 func stripFrame(data []byte) ([]byte, error) {
-	if len(data) >= headerLen && data[0] == start1 && data[1] == start2 {
-		l := int(data[2])<<8 | int(data[3])
-		if len(data) >= headerLen+l {
-			return data[headerLen : headerLen+l], nil
+	if len(data) >= headerLen {
+		if (data[0] == start1 && data[1] == start2) ||
+			(data[0] == start1v21 && data[1] == start2v21) {
+			l := int(data[2])<<8 | int(data[3])
+			if len(data) >= headerLen+l {
+				return data[headerLen : headerLen+l], nil
+			}
+			return nil, fmt.Errorf("incomplete frame")
 		}
-		return nil, fmt.Errorf("incomplete frame")
 	}
 	return data, nil
 }
@@ -28,7 +31,7 @@ func DecodeTelemetry(data []byte, version string) (*latestpb.Telemetry, error) {
 		return nil, err
 	}
 	switch version {
-	case "", "latest":
+	case "", "latest", "2.1":
 		var fr latestpb.FromRadio
 		if err := proto.Unmarshal(data, &fr); err == nil {
 			if pkt := fr.GetPacket(); pkt != nil {
@@ -60,7 +63,7 @@ func DecodeText(data []byte, version string) (string, error) {
 		return "", err
 	}
 	switch version {
-	case "", "latest":
+	case "", "latest", "2.1":
 		var fr latestpb.FromRadio
 		if err := proto.Unmarshal(data, &fr); err == nil {
 			if pkt := fr.GetPacket(); pkt != nil {

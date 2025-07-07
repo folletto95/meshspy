@@ -10,22 +10,21 @@ import (
 const (
 	start1    = 0x94
 	start2    = 0xC3
+	start1v21 = 0x44
+	start2v21 = 0x03
 	headerLen = 4
 )
 
 // DecodeNodeInfo decodes a protobuf blob into a NodeInfo message.
 // Currently only the "latest" proto version is supported.
 func DecodeNodeInfo(data []byte, version string) (*latestpb.NodeInfo, error) {
-	if len(data) >= headerLen && data[0] == start1 && data[1] == start2 {
-		l := int(data[2])<<8 | int(data[3])
-		if len(data) >= headerLen+l {
-			data = data[headerLen : headerLen+l]
-		} else {
-			return nil, fmt.Errorf("incomplete frame")
-		}
+	var err error
+	data, err = stripFrame(data)
+	if err != nil {
+		return nil, err
 	}
 	switch version {
-	case "", "latest":
+	case "", "latest", "2.1":
 		var fr latestpb.FromRadio
 		if err := proto.Unmarshal(data, &fr); err == nil && fr.GetNodeInfo() != nil {
 			return fr.GetNodeInfo(), nil
