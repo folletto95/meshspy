@@ -2,6 +2,7 @@ package nodemap
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	latestpb "meshspy/proto/latest/meshtastic"
@@ -15,6 +16,12 @@ type Entry struct {
 type Map struct {
 	mu    sync.RWMutex
 	nodes map[string]Entry
+}
+
+// Node represents a node entry along with its identifier.
+type Node struct {
+	ID string
+	Entry
 }
 
 func New() *Map {
@@ -71,4 +78,16 @@ func (m *Map) ResolveLong(id string) string {
 		return e.Long
 	}
 	return id
+}
+
+// List returns a snapshot of all known nodes sorted by id.
+func (m *Map) List() []Node {
+	m.mu.RLock()
+	nodes := make([]Node, 0, len(m.nodes))
+	for id, e := range m.nodes {
+		nodes = append(nodes, Node{ID: id, Entry: e})
+	}
+	m.mu.RUnlock()
+	sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID < nodes[j].ID })
+	return nodes
 }
