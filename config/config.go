@@ -19,6 +19,7 @@ type Config struct {
 	Password     string
 	Debug        bool
 	SendAlive    bool
+	EnableGUI    bool
 }
 
 // Load reads configuration values from the environment and returns a Config.
@@ -43,6 +44,13 @@ func Load() Config {
 		sendAlive = false
 	}
 
+	guiStr := getEnv("ENABLE_GUI", "false")
+	enableGUI, err := strconv.ParseBool(guiStr)
+	if err != nil {
+		log.Printf("invalid ENABLE_GUI value %q, defaulting to false", guiStr)
+		enableGUI = false
+	}
+
 	return Config{
 		SerialPort:   getEnv("SERIAL_PORT", "/dev/ttyUSB0"),
 		BaudRate:     baud,
@@ -54,6 +62,7 @@ func Load() Config {
 		Password:     os.Getenv("MQTT_PASS"),
 		Debug:        debug,
 		SendAlive:    sendAlive,
+		EnableGUI:    enableGUI,
 	}
 }
 
