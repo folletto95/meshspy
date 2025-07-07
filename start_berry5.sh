@@ -3,7 +3,7 @@
 # Script per avviare MeshSpy su Raspberry Pi 5
 # Opzioni:
 #   --clean : rimuove e riscarica l'immagine Docker
-#   --log   : mostra i log del container dopo l'avvio
+#   --log   : mostra i log del container ogni minuto
 
 CONTAINER_NAME="meshspy"
 IMAGE_NAME="nicbad/meshspy:latest"

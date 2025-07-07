@@ -138,7 +138,12 @@ Start it with the defaults:
 ```
 
 As with the generic helper you can combine `--clean` and `--log` to refresh the
-image and continuously follow the logs.
+image and continuously follow the logs:
+
+```bash
+./start_berry5.sh --clean
+./start_berry5.sh --log
+```
 
 ## Web Application
 
