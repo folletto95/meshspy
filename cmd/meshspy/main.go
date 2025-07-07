@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -27,6 +28,7 @@ import (
 const (
 	welcomeMessage = "Ciao da MeshSpy, presto (spero) per tutti"
 	aliveMessage   = "MeshSpy Alive"
+
 )
 
 // Version of the MeshSpy program. This value can be overridden at build time
@@ -36,6 +38,10 @@ var Version = "dev"
 func main() {
 	log.Println("🔥 MeshSpy avviamento iniziato...")
 	log.Printf("📦 Versione MeshSpy: %s", Version)
+
+	msg := flag.String("sendtext", "", "Messaggio da inviare invece di avviare il listener")
+	dest := flag.String("dest", "", "Nodo destinatario (opzionale)")
+	flag.Parse()
 
 	// Carica .env.runtime se presente
 	if err := godotenv.Load(".env.runtime"); err != nil {
@@ -61,6 +67,14 @@ func main() {
 
 	if cfg.EnableGUI {
 		go gui.Run(cfg, nodeStore)
+	}
+
+	if *msg != "" {
+		if err := mqtt.SendText(cfg.SerialPort, *dest, *msg); err != nil {
+			log.Fatalf("❌ Errore invio messaggio: %v", err)
+		}
+		log.Printf("✅ Messaggio inviato a %s", *dest)
+		return
 	}
 
 	// Connessione al broker MQTT
