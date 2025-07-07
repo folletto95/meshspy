@@ -15,6 +15,7 @@ import (
 	mqttpkg "meshspy/client"
 	"meshspy/config"
 	"meshspy/gui"
+	"meshspy/mgmtapi"
 	"meshspy/nodemap"
 	latestpb "meshspy/proto/latest/meshtastic"
 	"meshspy/serial"
@@ -41,6 +42,7 @@ func main() {
 	// Carica la configurazione dalle variabili d'ambiente
 	cfg := config.Load()
 	nodes := nodemap.New()
+	mgmt := mgmtapi.New(cfg.MgmtURL)
 
 	nodeDB := os.Getenv("NODE_DB_PATH")
 	if nodeDB == "" {
@@ -149,11 +151,17 @@ func main() {
 		if err := nodeStore.Upsert(info); err != nil {
 			log.Printf("⚠️ aggiornamento db nodi: %v", err)
 		}
+		if err := mgmt.SendNode(info); err != nil {
+			log.Printf("⚠️ invio info nodo al server: %v", err)
+		}
 		if nodesList, err := mqttpkg.GetMeshNodes(cfg.SerialPort); err == nil {
 			for _, n := range nodesList {
 				nodes.Update(n.Num, n.LongName, n.ShortName)
 				if err := nodeStore.Upsert(n); err != nil {
 					log.Printf("⚠️ aggiornamento db nodi: %v", err)
+				}
+				if err := mgmt.SendNode(n); err != nil {
+					log.Printf("⚠️ invio info nodo al server: %v", err)
 				}
 			}
 		} else {
@@ -185,6 +193,9 @@ func main() {
 			if info != nil {
 				if err := nodeStore.Upsert(info); err != nil {
 					log.Printf("⚠️ aggiornamento db nodi: %v", err)
+				}
+				if err := mgmt.SendNode(info); err != nil {
+					log.Printf("⚠️ invio info nodo al server: %v", err)
 				}
 			}
 		}, nil, nil, func(data string) {

@@ -36,6 +36,25 @@ func (s *apiServer) listNodes(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(nodes)
 }
 
+
+// upsertNode stores a NodeInfo received in the request body.
+func (s *apiServer) upsertNode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var info mqttpkg.NodeInfo
+	if err := json.NewDecoder(r.Body).Decode(&info); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+	if err := s.store.Upsert(&info); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // sendCommand publishes a command payload on the MQTT command topic.
 func (s *apiServer) sendCommand(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -81,7 +100,14 @@ func main() {
 	defer store.Close()
 
 	srv := newServer(client, cfg, store)
-	http.HandleFunc("/api/nodes", srv.listNodes)
+
+	http.HandleFunc("/api/nodes", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			srv.upsertNode(w, r)
+			return
+		}
+		srv.listNodes(w, r)
+	})
 	http.HandleFunc("/api/send", srv.sendCommand)
 
 	port := os.Getenv("SERVER_PORT")

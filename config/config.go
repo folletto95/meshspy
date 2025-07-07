@@ -20,6 +20,7 @@ type Config struct {
 	Debug        bool
 	SendAlive    bool
 	EnableGUI    bool
+	MgmtURL      string
 }
 
 // Load reads configuration values from the environment and returns a Config.
@@ -63,6 +64,7 @@ func Load() Config {
 		Debug:        debug,
 		SendAlive:    sendAlive,
 		EnableGUI:    enableGUI,
+		MgmtURL:      os.Getenv("MGMT_SERVER_URL"),
 	}
 }
 
