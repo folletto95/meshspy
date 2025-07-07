@@ -34,3 +34,10 @@ func ExampleMap_List() {
 	// 0x1:Alice/A
 	// 0x2:Bob/B
 }
+
+func ExampleMap_ResolveLong_fallbackShort() {
+	nm := New()
+	nm.Update(0x1, "", "A")
+	fmt.Println(nm.ResolveLong("0x1"))
+	// Output: A
+}

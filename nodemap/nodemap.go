@@ -68,14 +68,20 @@ func (m *Map) Resolve(id string) string {
 	return id
 }
 
-// ResolveLong returns the long name for the given node id if known, otherwise
-// it falls back to the id itself.
+// ResolveLong returns the long name for the given node id when available.
+// If the long name is empty, it falls back to the short name and finally to
+// the id itself when no name is known.
 func (m *Map) ResolveLong(id string) string {
 	m.mu.RLock()
 	e, ok := m.nodes[id]
 	m.mu.RUnlock()
-	if ok && e.Long != "" {
-		return e.Long
+	if ok {
+		if e.Long != "" {
+			return e.Long
+		}
+		if e.Short != "" {
+			return e.Short
+		}
 	}
 	return id
 }
