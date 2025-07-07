@@ -1,19 +1,19 @@
 #!/bin/bash
 
-# Script per avviare il container Docker MeshSpy
-# Opzioni:
-#   --clean : rimuove l'immagine e la riscarica
-#   --log   : mostra i log del container ogni minuto
+# Script to start the MeshSpy Docker container
+# Options:
+#   --clean : remove the image and pull it again
+#   --log   : show container logs every minute
 
-# Nome del container e dell'immagine
+# Container and image names
 CONTAINER_NAME="meshspy"
 IMAGE_NAME="nicbad/meshspy:latest"
 
-# Valori di default per le opzioni
+# Default values for the options
 CLEAN=false
 LOG=false
 
-# Parsing degli argomenti
+# Parse command line arguments
 for arg in "$@"; do
   case "$arg" in
     --clean)
@@ -31,7 +31,7 @@ for arg in "$@"; do
   esac
 done
 
-# Se richiesto, rimuovo l'immagine e la riscarico
+# Remove the image and pull it again when requested
 if [ "$CLEAN" = true ]; then
   echo "Pulizia immagine Docker: rimozione di $IMAGE_NAME..."
   docker image rm -f $IMAGE_NAME || true
@@ -39,14 +39,14 @@ if [ "$CLEAN" = true ]; then
   docker pull $IMAGE_NAME
 fi
 
-# Se il container esiste già, lo rimuoviamo
+# Remove the container if it already exists
 CONTAINER_ID="$(docker ps -a -q -f name=${CONTAINER_NAME})"
 if [ -n "$CONTAINER_ID" ]; then
   echo "Rimuovo il container esistente '${CONTAINER_NAME}'..."
   docker rm -f ${CONTAINER_NAME}
 fi
 
-# Avvio del nuovo container MeshSpy
+# Start a new MeshSpy container
 echo "Avvio del container '${CONTAINER_NAME}'..."
 docker run -d \
   --name ${CONTAINER_NAME} \
@@ -66,7 +66,7 @@ docker run -d \
 
 echo "Container '${CONTAINER_NAME}' avviato con successo."
 
-# Se richiesto, avvio la visualizzazione continua dei log
+# Start continuous log output if requested
 if [ "$LOG" = true ]; then
   echo "Avvio visualizzazione log. Premi Ctrl+C per interrompere."
   docker logs -f ${CONTAINER_NAME}

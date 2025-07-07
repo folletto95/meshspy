@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// ExportConfig esegue meshtastic-go per esportare la configurazione e salvarla in dest.
+// ExportConfig runs meshtastic-go to export the configuration and save it to dest.
 func ExportConfig(port, dest string) error {
 	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "config")
 	output, err := cmd.CombinedOutput()
@@ -18,7 +18,7 @@ func ExportConfig(port, dest string) error {
 	return os.WriteFile(dest, output, 0644)
 }
 
-// BuildConfigFilename restituisce il nome file di backup.
+// BuildConfigFilename returns the backup file name.
 func BuildConfigFilename(info *NodeInfo) string {
 	sanitize := func(s string) string {
 		s = strings.ReplaceAll(s, " ", "_")
