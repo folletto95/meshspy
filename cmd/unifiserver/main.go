@@ -36,6 +36,7 @@ func (s *apiServer) listNodes(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(nodes)
 }
 
+
 // upsertNode stores a NodeInfo received in the request body.
 func (s *apiServer) upsertNode(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -99,6 +100,7 @@ func main() {
 	defer store.Close()
 
 	srv := newServer(client, cfg, store)
+
 	http.HandleFunc("/api/nodes", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			srv.upsertNode(w, r)

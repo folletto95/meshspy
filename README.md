@@ -26,6 +26,15 @@ Then build the image:
 ./build.sh
 ```
 
+To build the container only for a specific platform set the `BUILD_PLATFORMS`
+environment variable:
+
+```bash
+BUILD_PLATFORMS=linux/amd64 ./build.sh
+```
+
+When unset the script builds images for multiple architectures.
+
 ### Building binaries
 
 To produce standalone binaries for Linux, Windows and macOS, run:
@@ -112,7 +121,8 @@ in this database so that external tools can inspect the mesh topology.
 ## Web Application
 
 A simple web interface lives in `cmd/webapp`. It serves an HTML page and
-forwards MQTT messages over WebSockets. Run it with Go:
+forwards MQTT messages over WebSockets. Messages typed in the page are
+published over MQTT and delivered to the mesh as text packets. Run it with Go:
 
 ```bash
 go run ./cmd/webapp

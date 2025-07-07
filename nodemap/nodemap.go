@@ -24,7 +24,14 @@ func New() *Map {
 func (m *Map) Update(num uint32, long, short string) {
 	id := fmt.Sprintf("0x%x", num)
 	m.mu.Lock()
-	m.nodes[id] = Entry{Long: long, Short: short}
+	e := m.nodes[id]
+	if long != "" {
+		e.Long = long
+	}
+	if short != "" {
+		e.Short = short
+	}
+	m.nodes[id] = e
 	m.mu.Unlock()
 }
 
