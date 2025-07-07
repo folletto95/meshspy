@@ -24,6 +24,7 @@ var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 // Inoltre pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
 func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
+	handleMyInfo func(*latestpb.MyNodeInfo),
 	handleTelemetry func(*latestpb.Telemetry),
 	handleText func(string),
 	publish func(string)) {
@@ -47,11 +48,12 @@ func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *no
 	defer port.Close()
 
 	readLoop(port, portName, baud, debug, protoVersion, nm,
-		handleNodeInfo, handleTelemetry, handleText, publish)
+		handleNodeInfo, handleMyInfo, handleTelemetry, handleText, publish)
 }
 
 func readLoop(port serial.Port, portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
+	handleMyInfo func(*latestpb.MyNodeInfo),
 	handleTelemetry func(*latestpb.Telemetry),
 	handleText func(string),
 	publish func(string)) {
@@ -87,6 +89,12 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 				}
 				return
 			}
+		}
+		if mi, err := decoder.DecodeMyInfo([]byte(line), protoVersion); err == nil {
+			if handleMyInfo != nil {
+				handleMyInfo(mi)
+			}
+			return
 		}
 		if tel, err := decoder.DecodeTelemetry([]byte(line), protoVersion); err == nil {
 			if handleTelemetry != nil {
@@ -173,6 +181,11 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 					if debug {
 						log.Printf("[DEBUG nodemap] learned %s => %s/%s", fmt.Sprintf("0x%x", ni.GetNum()), ni.GetUser().GetLongName(), ni.GetUser().GetShortName())
 					}
+				}
+			}
+			if mi, err := decoder.DecodeMyInfo(payload, protoVersion); err == nil {
+				if handleMyInfo != nil {
+					handleMyInfo(mi)
 				}
 			}
 

@@ -92,6 +92,14 @@ func Run(cfg config.Config, nodeStore *storage.NodeStore) {
 					}
 				}
 			},
+			func(mi *latestpb.MyNodeInfo) {
+				info := mqttpkg.NodeInfoFromMyInfo(mi)
+				if info != nil {
+					if err := nodeStore.Upsert(info); err == nil {
+						a.QueueUpdate(updateNodes)
+					}
+				}
+			},
 			nil,
 			func(txt string) {
 				a.QueueUpdate(func() {

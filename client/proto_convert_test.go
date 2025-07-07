@@ -84,3 +84,14 @@ func protoFloat32(v float32) *float32 { return &v }
 func protoInt32(v int32) *int32       { return &v }
 
 func protoUint32(v uint32) *uint32 { return &v }
+
+func TestNodeInfoFromMyInfo(t *testing.T) {
+	mi := &pb.MyNodeInfo{MyNodeNum: 123}
+	info := NodeInfoFromMyInfo(mi)
+	if info == nil {
+		t.Fatal("nil info")
+	}
+	if info.ID != "0x7b" || info.Num != 123 {
+		t.Fatalf("unexpected result: %+v", info)
+	}
+}
