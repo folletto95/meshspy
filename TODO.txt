@@ -1,24 +1,21 @@
-Capire l'errore e risolverlo:
-
-──(kali㉿kali)-[~/meshspy]
-└─$ docker logs meshspy                   
-  
-2025/07/01 14:49:46 🔥 MeshSpy avviamento iniziato...
-2025/07/01 14:49:46 🚀 MeshSpy avviato con successo! Inizializzazione in corso...
-2025/07/01 14:49:46 ⚠ Errore ottenimento info meshtastic-go: exit status 1
-2025/07/01 14:49:46 Listening on serial /dev/ttyACM0 at 115200 baud
-2025/07/01 14:49:46 [DEBUG serial] "[HTTPS:I] Request: GET /api/v1/fromradio?all=false (FID=53)\r\n"
-2025/07/01 14:49:46 [DEBUG parse] no node found in "[HTTPS:I] Request: GET /api/v1/fromradio?all=false (FID=53)\r\n"
-2025/07/01 14:49:46 [DEBUG serial] "DEBUG | 16:49:50 2258 [WebServer] webAPI handleAPIv1FromRadio\r\n"
-2025/07/01 14:49:46 [DEBUG parse] no node found in "DEBUG | 16:49:50 2258 [WebServer] webAPI handleAPIv1FromRadio\r\n"
-2025/07/01 14:49:46 [DEBUG serial] "DEBUG | 16:49:50 2258 [WebServer] webAPI handleAPIv1FromRadio, len 0\r\n"
-
-
-Verificare che i dati arrivino su mqtt.
-
 testare l'invio e ricezione di messaggi dal client verso mqtt e altri nodi della mesh.
 
 Controllare la lettura dei nodi e fare lo strore dei nodi su db.
 
 Verificare l'estrazione dei dati corretti dei vari nodi dalla scheda.
 
+Web ui ancora non funzionante, 127.0.0.1:8080 non funzionante
+
+Nella web ui devono essere visualizzati i nodi in una lista e fatti vedere i dati salvati.
+
+La web ui deve ricevere e mandare messaggi sui canali che vedi nel node info e ai singoli nodi come messaggio diretto
+
+La web ui si deve avviare da sola all'avvio del docker 
+
+Dobbiamo sviluppare l'api per parlare in mqtt col server 
+
+Va sviluppato il server di gestione stile Ubiquity Unifi
+
+Inserire riconnessioni e retry su tutte le azioni da fare nel nodo
+
+strutturare e decodificare i dati ricevuti dalla mesh.

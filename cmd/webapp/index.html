@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MeshSpy Messages</title>
+<style>
+#messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 5px; }
+</style>
+</head>
+<body>
+<h1>MeshSpy Messages</h1>
+<div id="messages"></div>
+<h2>Nodes</h2>
+<ul id="nodes"></ul>
+<form id="form">
+  <input id="text" autocomplete="off" placeholder="Type a message"/>
+  <button type="submit">Send</button>
+</form>
+<button id="defaultButton" type="button">Send default</button>
+<script>
+const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+ws.onopen = () => console.log("WebSocket connection opened");
+ws.onerror = (ev) => console.error("WebSocket error", ev);
+ws.onclose = () => console.log("WebSocket connection closed");
+ws.onmessage = (ev) => {
+  console.log("WebSocket message", ev.data);
+  const msgEl = document.createElement("div");
+  msgEl.textContent = ev.data;
+  document.getElementById("messages").appendChild(msgEl);
+};
+
+document.getElementById("form").onsubmit = (ev) => {
+  ev.preventDefault();
+  const text = document.getElementById("text");
+  console.log("Sending message", text.value);
+  ws.send(text.value);
+  const echo = document.createElement("div");
+  echo.textContent = "You: " + text.value;
+  document.getElementById("messages").appendChild(echo);
+  text.value = "";
+};
+
+document.getElementById("defaultButton").onclick = () => {
+  console.log("Sending default message");
+  ws.send("Hello from web");
+  const echo = document.createElement("div");
+  echo.textContent = "You: Hello from web";
+  document.getElementById("messages").appendChild(echo);
+};
+
+fetch("/nodes").then(r => r.json()).then(nodes => {
+  const list = document.getElementById("nodes");
+  nodes.forEach(n => {
+    const li = document.createElement("li");
+    const name = n.LongName || n.ID;
+    li.textContent = `${name} [${n.ShortName}] id:${n.ID} battery:${n.BatteryLevel}%`;
+    list.appendChild(li);
+  });
+});
+</script>
+</body>
+</html>

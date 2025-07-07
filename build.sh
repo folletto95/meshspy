@@ -22,6 +22,9 @@ TAG="${TAG:-latest}"
 ARCH_ARMV6="linux/arm/v6"
 PLATFORMS_PARALLEL="linux/arm/v7,linux/amd64,linux/386,linux/arm64"
 
+# Permette di specificare piattaforme custom con BUILD_PLATFORMS
+BUILD_PLATFORMS="${BUILD_PLATFORMS:-}"
+
 PROTO_REPO="https://github.com/meshtastic/protobufs.git"
 TMP_DIR=".proto_tmp"
 PROTO_MAP_FILE=".proto_compile_map.sh"
@@ -103,6 +106,23 @@ fi
 docker buildx use meshspy-builder
 docker buildx inspect --bootstrap
 
+# Se BUILD_PLATFORMS è impostato, buildiamo solo per quelle
+if [[ -n "$BUILD_PLATFORMS" ]]; then
+  echo "🚀 Build personalizzato per: ${BUILD_PLATFORMS}"
+  BASE="golang:1.21-alpine"
+  if [[ "$BUILD_PLATFORMS" == "$ARCH_ARMV6" ]]; then
+    BASE="arm32v6/golang:1.21.0-alpine"
+  fi
+  docker buildx build \
+    --platform "${BUILD_PLATFORMS}" \
+    --push \
+    -t "${IMAGE}:${TAG}" \
+    --build-arg BASE_IMAGE="$BASE" \
+    .
+  echo "✅ Done! Image ready: ${IMAGE}:${TAG}"
+  exit 0
+fi
+
 # 🔨 Build ARMv6 separata (buildx fallback per piattaforme legacy)
 echo "🐹 Build ARMv6 senza buildx (solo se host ARM compatibile)"
 docker buildx build \
@@ -120,7 +140,7 @@ docker buildx build \
   --platform "${PLATFORMS_PARALLEL}" \
   --push \
   -t "${IMAGE}:${TAG}" \
-  --build-arg BASE_IMAGE=golang:1.21-bullseye \
+  --build-arg BASE_IMAGE=golang:1.21-alpine \
   .
 
 # 🔗 Unione ARMv6 nel manifest principale

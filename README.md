@@ -9,7 +9,7 @@ Dockerfile to build a minimal container image.
 - Go 1.20+ for building locally
 - `meshtastic-go` binary available in `/usr/local/bin/meshtastic-go` or built
   using the provided Dockerfile
-- A `.env.runtime` file with runtime settings
+- A `.env.runtime` file with runtime settings (copy `.env.runtime.example`)
 
 ## Building
 
@@ -26,9 +26,40 @@ Then build the image:
 ./build.sh
 ```
 
+To build the container only for a specific platform set the `BUILD_PLATFORMS`
+environment variable:
+
+```bash
+BUILD_PLATFORMS=linux/amd64 ./build.sh
+```
+
+When unset the script builds images for multiple architectures.
+
+Supported platforms:
+
+```
+linux/amd64
+linux/arm64
+linux/arm/v7
+linux/arm/v6
+linux/386
+```
+When unset the script builds images for multiple architectures.
+
+### Building binaries
+
+To produce standalone binaries for Linux, Windows and macOS, run:
+
+```bash
+./build-binaries.sh
+```
+
+The compiled executables will be placed in the `dist/` directory.
+
+
 ## Running
 
-Configure the runtime environment in `.env.runtime`. The most important
+Configure the runtime environment in `.env.runtime` (create it from `.env.runtime.example`). The most important
 variable is `SERIAL_PORT` which should point to your Meshtastic serial device.
 Then run the container exposing the serial device and MQTT details:
 
@@ -38,4 +69,93 @@ docker run --device=/dev/ttyACM0 \
 ```
 
 During start-up the service prints information from `meshtastic-go` and begins
-streaming data from the serial port to the configured MQTT topic.
+
+streaming data from the serial port to the configured MQTT topic. When the
+`SEND_ALIVE_ON_START` environment variable is set to `true`, the service also
+sends a `MeshSpy Alive` message on the configured MQTT topic and to the node
+itself using `meshtastic-go message send -m`, so other components can detect that
+the service is running and nodes are reached.
+
+
+### `start_meshspy.sh` helper
+
+For a quick start, run the `start_meshspy.sh` script which launches the
+container with some default environment variables:
+
+- `SERIAL_PORT=/dev/ttyACM0`
+- `BAUD_RATE=115200`
+- `MQTT_BROKER=tcp://smpisa.ddns.net:1883`
+- `MQTT_TOPIC=meshspy`
+-  (avoid wildcards here, as publishing to topics like `mesh/#` is not supported)
+- `MQTT_CLIENT_ID=meshspy-kali`
+- `MQTT_USER=testmeshspy`
+- `MQTT_PASS=test1`
+- `SEND_ALIVE_ON_START=true`
+  (set to `false` if you do **not** want the service to send and log a `MeshSpy Alive`
+  message on start-up)
+- `NODE_DB_PATH=nodes.db`
+  (location of the SQLite database that stores node information. When unset the
+  file `nodes.db` is created in the working directory &ndash; `/app/nodes.db`
+  inside the container. Set this to an absolute path such as
+`/app/data/nodes.db` to persist the database in a mounted host volume.)
+- `ENABLE_GUI=false`
+
+  (set to `true` to launch the desktop interface. The GUI lets you choose
+  the serial port, connect or disconnect from the node and shows the same
+  messages and node list available in the web interface.)
+
+The helper sets `SEND_ALIVE_ON_START` so the service announces itself when launched.
+
+Start the container using the defaults:
+
+```bash
+./start_meshspy.sh
+```
+
+Use `--clean` to remove and re-pull the image before starting and `--log` to
+periodically show container logs:
+
+```bash
+./start_meshspy.sh --clean
+./start_meshspy.sh --log
+```
+
+Both options can be combined if required.
+
+The service stores information about all discovered nodes in a SQLite database.
+By default this file is `nodes.db` in the working directory (`/app/nodes.db`
+inside the container). Set the `NODE_DB_PATH` environment variable to point to a
+different location, for example `/app/data/nodes.db` when you mount a volume on
+the host. Each time a
+`NodeInfo` protobuf message is received it is converted and inserted or updated
+in this database so that external tools can inspect the mesh topology.
+
+## Web Application
+
+A simple web interface lives in `cmd/webapp`. It serves an HTML page and
+forwards MQTT messages over WebSockets. Messages typed in the page are
+published over MQTT and delivered to the mesh as text packets. Run it with Go:
+
+```bash
+go run ./cmd/webapp
+```
+
+The application reads the same `.env.runtime` file used by `meshspy` (create this from `.env.runtime.example`). Set
+`WEB_PORT` to change the listening port (default `8080`) and open your browser
+to `http://localhost:8080`.
+
+## Simple Message Board
+
+For a minimal example that does not rely on MQTT, a tiny in-memory
+message board is available in `cmd/messagesapp`:
+
+```bash
+go run ./cmd/messagesapp
+```
+
+Visit `http://localhost:8080` and post messages through the form to see
+them listed on the page.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

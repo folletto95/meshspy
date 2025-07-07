@@ -1,65 +1,90 @@
+// Package mqtt provides utilities to parse Meshtastic node information and publish it to an MQTT broker.
 package mqtt
 
 import (
 	"bufio"
 	"bytes"
-	//"log"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
-	//"strings"
-	//"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"meshspy/config"
 )
 
-// Info rappresenta le informazioni estratte dal dispositivo Meshtastic
+// NodeInfo represents the information extracted from a Meshtastic device.
 type NodeInfo struct {
-	ID                string
-	LongName          string
-	ShortName         string
-	MacAddr           string
-	HwModel           string
-	Role              string
-	Latitude          float64
-	Longitude         float64
-	Altitude          int
-	LocationTime      int64
-	LocationSource    string
-	BatteryLevel      int
-	Voltage           float64
-	ChannelUtil       float64
-	AirUtilTx         float64
-	FirmwareVersion   string
-	DeviceStateVer    int
-	CanShutdown       bool
-	HasWifi           bool
-	HasBluetooth      bool
-	HasEthernet       bool
-	RadioRole         string
-	PositionFlags     int
-	RadioHwModel      string
-	HasRemoteHardware bool
+	ID                    string
+	Num                   uint32
+	LongName              string
+	ShortName             string
+	MacAddr               string
+	HwModel               string
+	Role                  string
+	Latitude              float64
+	Longitude             float64
+	Altitude              int
+	LocationTime          int64
+	LocationSource        string
+	BatteryLevel          int
+	Voltage               float64
+	ChannelUtil           float64
+	AirUtilTx             float64
+	UptimeSeconds         int
+	FirmwareVersion       string
+	DeviceStateVer        int
+	CanShutdown           bool
+	HasWifi               bool
+	HasBluetooth          bool
+	HasEthernet           bool
+	RadioRole             string
+	PositionFlags         int
+	RadioHwModel          string
+	HasRemoteHardware     bool
+	Snr                   float64
+	LastHeard             int64
+	Channel               int
+	ViaMqtt               bool
+	HopsAway              int
+	IsFavorite            bool
+	IsIgnored             bool
+	IsKeyManuallyVerified bool
 }
 
 // Espressioni regolari
-var (
-	nameRe = regexp.MustCompile(`long_name:"([^"]+)"`)
-	fwRe   = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
-)
+//var (
+//	nameRe = regexp.MustCompile(`long_name:"([^"]+)"`)
+//	fwRe   = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
+//)
 
 // GetLocalNodeInfo esegue meshtastic-go e recupera i dati dal primo nodo dopo "Radio Settings:"
 func GetLocalNodeInfo(port string) (*NodeInfo, error) {
-	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "info")
-	output, err := cmd.CombinedOutput()
-	//fmt.Printf("📤 Eseguo comando: %s\n", strings.Join(cmd.Args, " "))
-	//fmt.Println("🔍 Output completo di meshtastic-go:\n")
-	//fmt.Println(string(output))
+	var (
+		output []byte
+		err    error
+	)
+
+	for attempt := 1; attempt <= 5; attempt++ {
+		cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "info")
+		output, err = cmd.CombinedOutput()
+		//fmt.Printf("📤 Eseguo comando: %s\n", strings.Join(cmd.Args, " "))
+		//fmt.Println("🔍 Output completo di meshtastic-go:\n")
+		//fmt.Println(string(output))
+
+		if err == nil {
+			break
+		}
+
+		fmt.Printf("❌ Errore durante l'esecuzione di meshtastic-go (tentativo %d/5): %v\n", attempt, err)
+		time.Sleep(time.Second)
+	}
+
 	if err != nil {
 		fmt.Printf("❌ Errore durante l'esecuzione di meshtastic-go: %v\n", err)
 		return nil, err
@@ -87,7 +112,7 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 
 		switch {
 		case strings.HasPrefix(line, "User"):
-			re := regexp.MustCompile(`id:"([^"]+)"\s+long_name:"([^"]+)"\s+short_name:"([^"]+)"\s+macaddr:"([^"]+)"\s+hw_model:(\S+)\s+role:(\S+)`)
+			re := regexp.MustCompile(`id:"([^"]+)".*?long_name:"([^"]+)".*?short_name:"([^"]+)".*?macaddr:"([^"]+)".*?hw_model:(\S+).*?role:(\S+)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) >= 7 {
 				node.ID = matches[1]
@@ -140,7 +165,9 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 			node.HasRemoteHardware = strings.Contains(line, "true")
 		}
 	}
-
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
 	return node, nil
 }
 
@@ -148,12 +175,22 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 func ConnectMQTT(cfg config.Config) (mqtt.Client, error) {
 	opts := mqtt.NewClientOptions().
 		AddBroker(cfg.MQTTBroker).
-		SetClientID(cfg.ClientID)
+		SetClientID(cfg.ClientID).
+		SetAutoReconnect(true).
+		SetConnectRetry(true).
+		SetConnectRetryInterval(5 * time.Second)
 
 	if cfg.User != "" {
 		opts.SetUsername(cfg.User)
 		opts.SetPassword(cfg.Password)
 	}
+
+	opts.SetConnectionLostHandler(func(c mqtt.Client, err error) {
+		log.Printf("⚠️ MQTT connection lost: %v", err)
+	})
+	opts.SetOnConnectHandler(func(c mqtt.Client) {
+		log.Printf("✅ MQTT connection established")
+	})
 
 	client := mqtt.NewClient(opts)
 	token := client.Connect()
@@ -174,16 +211,52 @@ func SaveNodeInfo(info *NodeInfo, path string) error {
 	return enc.Encode(info)
 }
 
-// SendText sends a text message to an optional destination using meshtastic-go
-func SendText(port, dest, msg string) error {
-	args := []string{"--port", port, "message", "send", "--message", msg}
-	if dest != "" {
-		args = append(args, "--to", dest)
-	}
-	cmd := exec.Command("/usr/local/bin/meshtastic-go", args...)
-	output, err := cmd.CombinedOutput()
+// LoadNodeInfo deserializes NodeInfo from a JSON file
+func LoadNodeInfo(path string) (*NodeInfo, error) {
+	f, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("meshtastic-go failed: %v - %s", err, string(output))
+		return nil, err
 	}
-	return nil
+	defer f.Close()
+
+	var info NodeInfo
+	if err := json.NewDecoder(f).Decode(&info); err != nil {
+		return nil, err
+	}
+	return &info, nil
+}
+
+// GetLocalNodeInfoCached loads node info from the given path when available.
+// When the file does not exist or cannot be parsed, it executes
+// meshtastic-go to retrieve the information and saves it for later use.
+func GetLocalNodeInfoCached(port, path string) (*NodeInfo, error) {
+	if info, err := LoadNodeInfo(path); err == nil {
+		if info.LongName != "" && info.FirmwareVersion != "" {
+			return info, nil
+		}
+	}
+
+	info, err := GetLocalNodeInfo(port)
+	if err != nil {
+		return nil, err
+	}
+	if err := SaveNodeInfo(info, path); err != nil {
+		fmt.Printf("⚠️ salvataggio info nodo fallito: %v\n", err)
+	}
+	return info, nil
+}
+
+// PublishAlive sends a simple \"MeshSpy Alive\" message to the given topic.
+func PublishAlive(client mqtt.Client, topic string) error {
+	token := client.Publish(topic, 0, false, []byte("MeshSpy Alive"))
+	token.Wait()
+	return token.Error()
+}
+
+// SendAliveIfNeeded publishes an Alive message when cfg.SendAlive is true.
+func SendAliveIfNeeded(client mqtt.Client, cfg config.Config) error {
+	if !cfg.SendAlive {
+		return nil
+	}
+	return PublishAlive(client, cfg.MQTTTopic)
 }
