@@ -80,7 +80,8 @@ the service is running and nodes are reached.
 ### `start_meshspy.sh` helper
 
 For a quick start, run the `start_meshspy.sh` script which launches the
-container with some default environment variables:
+container with some default environment variables. The script also loads
+additional settings from `.env.runtime` when present:
 
 - `SERIAL_PORT=/dev/ttyACM0`
 - `BAUD_RATE=115200`
@@ -129,7 +130,8 @@ in this database so that external tools can inspect the mesh topology.
 
 Owners of a Raspberry&nbsp;Pi&nbsp;5 can use the `start_berry5.sh` script. It
 launches the container for the arm64 architecture and stores the node database
-in the `meshspy_data` directory on the host.
+in the `meshspy_data` directory on the host. The helper also reads
+configuration from `.env.runtime` if available.
 
 Start it with the defaults:
 

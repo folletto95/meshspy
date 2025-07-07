@@ -54,6 +54,7 @@ docker run -d \
   --privileged \
   -p 8080:8080 \
   -v ~/meshspy_data:/app/data \
+  --env-file .env.runtime \
   -e SERIAL_PORT=/dev/ttyACM0 \
   -e BAUD_RATE=115200 \
   -e MQTT_BROKER=tcp://smpisa.ddns.net:1883 \
