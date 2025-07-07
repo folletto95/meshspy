@@ -78,8 +78,10 @@ container with some default environment variables:
   inside the container. Set this to an absolute path such as
 `/app/data/nodes.db` to persist the database in a mounted host volume.)
 - `ENABLE_GUI=false`
-  (set to `true` to launch the simple desktop interface if a graphical
-  environment is available)
+
+  (set to `true` to launch the desktop interface. The GUI lets you choose
+  the serial port, connect or disconnect from the node and shows the same
+  messages and node list available in the web interface.)
 
 The helper sets `SEND_ALIVE_ON_START` so the service announces itself when launched.
 

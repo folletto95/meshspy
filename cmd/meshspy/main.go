@@ -53,7 +53,7 @@ func main() {
 	defer nodeStore.Close()
 
 	if cfg.EnableGUI {
-		go gui.Run(nodeStore)
+		go gui.Run(cfg, nodeStore)
 	}
 
 	// Connessione al broker MQTT
