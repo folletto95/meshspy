@@ -76,7 +76,10 @@ container with some default environment variables:
   (location of the SQLite database that stores node information. When unset the
   file `nodes.db` is created in the working directory &ndash; `/app/nodes.db`
   inside the container. Set this to an absolute path such as
-  `/app/data/nodes.db` to persist the database in a mounted host volume.)
+`/app/data/nodes.db` to persist the database in a mounted host volume.)
+- `ENABLE_GUI=false`
+  (set to `true` to launch the simple desktop interface if a graphical
+  environment is available)
 
 The helper sets `SEND_ALIVE_ON_START` so the service announces itself when launched.
 
