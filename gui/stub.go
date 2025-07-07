@@ -1,6 +1,7 @@
 //go:build !gui
 
 package gui
+
 import (
 	"meshspy/config"
 	"meshspy/storage"
