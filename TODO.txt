@@ -19,3 +19,19 @@ Va sviluppato il server di gestione stile Ubiquity Unifi
 Inserire riconnessioni e retry su tutte le azioni da fare nel nodo
 
 strutturare e decodificare i dati ricevuti dalla mesh.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DIO CANE
