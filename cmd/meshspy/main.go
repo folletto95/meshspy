@@ -167,7 +167,7 @@ func main() {
 				}
 			}
 		} else {
-			log.Printf("⚠️ lettura nodi: %v", err)
+			log.Printf("⚠️ lettura nodi fallita: %v", err)
 		}
 		cfgFile := mqttpkg.BuildConfigFilename(info)
 		if err := mqttpkg.ExportConfig(cfg.SerialPort, cfgFile); err != nil {
