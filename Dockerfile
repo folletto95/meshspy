@@ -37,7 +37,7 @@ COPY . .
 
 # ✅ COMPILA meshspy
 RUN GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
-    go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
+    go build -tags gui -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
 # ✅ COMPILA webapp
 RUN GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
