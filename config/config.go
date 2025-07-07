@@ -23,7 +23,6 @@ type Config struct {
 	Password     string
 	Debug        bool
 	SendAlive    bool
-	EnableGUI    bool
 	MgmtURL      string
 }
 
@@ -49,13 +48,6 @@ func Load() Config {
 		sendAlive = false
 	}
 
-	guiStr := getEnv("ENABLE_GUI", "false")
-	enableGUI, err := strconv.ParseBool(guiStr)
-	if err != nil {
-		log.Printf("invalid ENABLE_GUI value %q, defaulting to false", guiStr)
-		enableGUI = false
-	}
-
 	serialPort := getEnv("SERIAL_PORT", "/dev/ttyUSB0")
 	if !portExists(serialPort) {
 		log.Printf("⚠️  porta seriale %s non trovata, ricerca automatica", serialPort)
@@ -78,7 +70,6 @@ func Load() Config {
 		Password:     os.Getenv("MQTT_PASS"),
 		Debug:        debug,
 		SendAlive:    sendAlive,
-		EnableGUI:    enableGUI,
 		MgmtURL:      os.Getenv("MGMT_SERVER_URL"),
 	}
 }

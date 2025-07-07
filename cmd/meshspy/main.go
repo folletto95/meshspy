@@ -15,7 +15,6 @@ import (
 
 	mqttpkg "meshspy/client"
 	"meshspy/config"
-	"meshspy/gui"
 	"meshspy/mgmtapi"
 	"meshspy/nodemap"
 	latestpb "meshspy/proto/latest/meshtastic"
@@ -63,10 +62,6 @@ func main() {
 		log.Fatalf("❌ apertura db nodi: %v", err)
 	}
 	defer nodeStore.Close()
-
-	if cfg.EnableGUI {
-		go gui.Run(cfg, nodeStore)
-	}
 
 	if *msg != "" {
 		if err := serial.SendText(cfg.SerialPort, *msg); err != nil {
