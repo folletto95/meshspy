@@ -146,7 +146,7 @@ func main() {
 	}
 
 	var protoVer string
-	info, err := mqttpkg.GetLocalNodeInfo(cfg.SerialPort)
+	info, err := mqttpkg.GetLocalNodeInfoCached(cfg.SerialPort, "nodes.json")
 	if err != nil {
 		log.Printf("⚠️ Lettura info nodo fallita: %v", err)
 	} else {

@@ -203,6 +203,41 @@ func SaveNodeInfo(info *NodeInfo, path string) error {
 	return enc.Encode(info)
 }
 
+// LoadNodeInfo deserializes NodeInfo from a JSON file
+func LoadNodeInfo(path string) (*NodeInfo, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var info NodeInfo
+	if err := json.NewDecoder(f).Decode(&info); err != nil {
+		return nil, err
+	}
+	return &info, nil
+}
+
+// GetLocalNodeInfoCached loads node info from the given path when available.
+// When the file does not exist or cannot be parsed, it executes
+// meshtastic-go to retrieve the information and saves it for later use.
+func GetLocalNodeInfoCached(port, path string) (*NodeInfo, error) {
+	if info, err := LoadNodeInfo(path); err == nil {
+		if info.LongName != "" && info.FirmwareVersion != "" {
+			return info, nil
+		}
+	}
+
+	info, err := GetLocalNodeInfo(port)
+	if err != nil {
+		return nil, err
+	}
+	if err := SaveNodeInfo(info, path); err != nil {
+		fmt.Printf("⚠️ salvataggio info nodo fallito: %v\n", err)
+	}
+	return info, nil
+}
+
 // PublishAlive sends a simple \"MeshSpy Alive\" message to the given topic.
 func PublishAlive(client mqtt.Client, topic string) error {
 	token := client.Publish(topic, 0, false, []byte("MeshSpy Alive"))
