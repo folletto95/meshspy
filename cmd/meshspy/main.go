@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -27,6 +28,8 @@ import (
 const (
 	welcomeMessage = "Ciao da MeshSpy, presto (spero) per tutti"
 	aliveMessage   = "MeshSpy Alive"
+	// logFilename specifies the file where all log output is written
+	logFilename = "log.txt"
 )
 
 // Version of the MeshSpy program. This value can be overridden at build time
@@ -45,6 +48,15 @@ func init() {
 }
 
 func main() {
+	// Open or create the log file and direct all log output to it
+	f, err := os.OpenFile(logFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatalf("unable to open log file: %v", err)
+	}
+	defer f.Close()
+	// Write logs to both stdout and the file for easier debugging
+	log.SetOutput(io.MultiWriter(os.Stdout, f))
+
 	log.Println("🔥 MeshSpy avviamento iniziato...")
 	log.Printf("📦 Versione MeshSpy: %s", Version)
 
