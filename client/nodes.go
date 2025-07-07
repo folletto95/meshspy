@@ -16,11 +16,11 @@ func GetMeshNodes(port string) ([]*NodeInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ParseNodesOutput(output), nil
+	return ParseNodesOutput(output)
 }
 
 // ParseNodesOutput parses a table of nodes produced by meshtastic-go.
-func ParseNodesOutput(data []byte) []*NodeInfo {
+func ParseNodesOutput(data []byte) ([]*NodeInfo, error) {
 	var nodes []*NodeInfo
 	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
@@ -56,5 +56,8 @@ func ParseNodesOutput(data []byte) []*NodeInfo {
 			Longitude: float64(lon) / 1e7,
 		})
 	}
-	return nodes
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return nodes, nil
 }
