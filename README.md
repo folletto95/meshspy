@@ -26,6 +26,15 @@ Then build the image:
 ./build.sh
 ```
 
+To build the container only for a specific platform set the `BUILD_PLATFORMS`
+environment variable:
+
+```bash
+BUILD_PLATFORMS=linux/amd64 ./build.sh
+```
+
+When unset the script builds images for multiple architectures.
+
 ### Building binaries
 
 To produce standalone binaries for Linux, Windows and macOS, run:
