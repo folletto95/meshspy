@@ -205,6 +205,16 @@ func main() {
 					log.Printf("⚠️ invio info nodo al server: %v", err)
 				}
 			}
+		}, func(mi *latestpb.MyNodeInfo) {
+			info := mqttpkg.NodeInfoFromMyInfo(mi)
+			if info != nil {
+				if err := nodeStore.Upsert(info); err != nil {
+					log.Printf("⚠️ aggiornamento db nodi: %v", err)
+				}
+				if err := mgmt.SendNode(info); err != nil {
+					log.Printf("⚠️ invio info nodo al server: %v", err)
+				}
+			}
 		}, nil, nil, func(data string) {
 			// Pubblica ogni messaggio ricevuto sul topic MQTT
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)

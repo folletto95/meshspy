@@ -45,3 +45,14 @@ func NodeInfoFromProto(ni *latestpb.NodeInfo) *NodeInfo {
 	info.IsKeyManuallyVerified = ni.GetIsKeyManuallyVerified()
 	return info
 }
+
+// NodeInfoFromMyInfo converts a MyNodeInfo message to the internal NodeInfo type.
+func NodeInfoFromMyInfo(mi *latestpb.MyNodeInfo) *NodeInfo {
+	if mi == nil {
+		return nil
+	}
+	return &NodeInfo{
+		ID:  fmt.Sprintf("0x%x", mi.GetMyNodeNum()),
+		Num: mi.GetMyNodeNum(),
+	}
+}
