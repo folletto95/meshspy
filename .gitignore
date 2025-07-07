@@ -2,3 +2,8 @@ Working/
 OLD_proto/
 
 .env.build
+.env.runtime
+Dump_serial.txt
+nodes.db
+messages.db
+dist/

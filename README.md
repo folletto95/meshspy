@@ -9,7 +9,7 @@ Dockerfile to build a minimal container image.
 - Go 1.20+ for building locally
 - `meshtastic-go` binary available in `/usr/local/bin/meshtastic-go` or built
   using the provided Dockerfile
-- A `.env.runtime` file with runtime settings
+- A `.env.runtime` file with runtime settings (copy `.env.runtime.example`)
 
 ## Building
 
@@ -59,7 +59,7 @@ The compiled executables will be placed in the `dist/` directory.
 
 ## Running
 
-Configure the runtime environment in `.env.runtime`. The most important
+Configure the runtime environment in `.env.runtime` (create it from `.env.runtime.example`). The most important
 variable is `SERIAL_PORT` which should point to your Meshtastic serial device.
 Then run the container exposing the serial device and MQTT details:
 
@@ -140,7 +140,7 @@ published over MQTT and delivered to the mesh as text packets. Run it with Go:
 go run ./cmd/webapp
 ```
 
-The application reads the same `.env.runtime` file used by `meshspy`. Set
+The application reads the same `.env.runtime` file used by `meshspy` (create this from `.env.runtime.example`). Set
 `WEB_PORT` to change the listening port (default `8080`) and open your browser
 to `http://localhost:8080`.
 
