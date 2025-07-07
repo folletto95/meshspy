@@ -226,7 +226,7 @@ func main() {
 		log.Printf("✅ Messaggio di benvenuto inviato")
 	}
 
-	portMgr, err = serial.OpenManager(cfg.SerialPort, cfg.BaudRate)
+	portMgr, err = serial.OpenManager(cfg.SerialPort, cfg.BaudRate, protoVer)
 	if err != nil {
 		log.Fatalf("❌ apertura porta seriale: %v", err)
 	}
