@@ -14,6 +14,7 @@ import (
 
 	mqttpkg "meshspy/client"
 	"meshspy/config"
+	"meshspy/gui"
 	"meshspy/nodemap"
 	latestpb "meshspy/proto/latest/meshtastic"
 	"meshspy/serial"
@@ -50,6 +51,10 @@ func main() {
 		log.Fatalf("❌ apertura db nodi: %v", err)
 	}
 	defer nodeStore.Close()
+
+	if cfg.EnableGUI {
+		go gui.Run(nodeStore)
+	}
 
 	// Connessione al broker MQTT
 	client, err := mqttpkg.ConnectMQTT(cfg)
