@@ -29,8 +29,13 @@ const (
 	aliveMessage   = "MeshSpy Alive"
 )
 
+// Version of the MeshSpy program. This value can be overridden at build time
+// using: go build -ldflags="-X main.Version=x.y.z"
+var Version = "dev"
+
 func main() {
 	log.Println("🔥 MeshSpy avviamento iniziato...")
+	log.Printf("📦 Versione MeshSpy: %s", Version)
 
 	// Carica .env.runtime se presente
 	if err := godotenv.Load(".env.runtime"); err != nil {
