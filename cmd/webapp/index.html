@@ -2,85 +2,99 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MeshSpy Messages</title>
+<title>MeshSpy Dashboard</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
 body {
-  font-family: Arial, sans-serif;
   margin: 0;
-  padding: 20px;
-  background: #f5f5f7;
-  color: #333;
+  font-family: Arial, sans-serif;
+  background: #1a202c;
+  color: #e2e8f0;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  grid-template-rows: 1fr 220px;
+  grid-template-areas:
+    "sidebar main"
+    "messages messages";
 }
 
-h1 {
-  color: #5865F2;
-  margin-bottom: 10px;
+#sidebar {
+  grid-area: sidebar;
+  padding: 10px;
+  background: #2d3748;
+  overflow-y: auto;
+}
+
+#main {
+  grid-area: main;
+  position: relative;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 #messages {
-  height: 300px;
-  overflow-y: auto;
-  border: 1px solid #ccc;
+  grid-area: messages;
   padding: 10px;
-  background: #fff;
-  margin-bottom: 20px;
+  overflow-y: auto;
+  background: #2d3748;
+  display: flex;
+  flex-direction: column;
 }
 
-#nodes {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0;
-}
-
-#nodes li {
-  padding: 5px 0;
-  border-bottom: 1px solid #eee;
+#messages div {
+  margin-bottom: 4px;
 }
 
 form {
   display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 input[type="text"] {
   flex: 1;
-  padding: 8px;
-  border: 1px solid #ccc;
+  border: none;
   border-radius: 4px;
+  padding: 6px;
 }
 
 button {
-  background: #5865F2;
+  background: #4299e1;
   color: #fff;
   border: none;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
 }
 
 button:hover {
-  background: #563ACC;
+  background: #3182ce;
 }
-
-#defaultButton {
-  margin-left: 10px;
-}
-#map { height: 400px; margin-top: 20px; }
 </style>
 </head>
 <body>
-<h1>MeshSpy Messages</h1>
-<div id="messages"></div>
-<h2>Nodes</h2>
-<ul id="nodes"></ul>
-<form id="form">
-  <input id="text" autocomplete="off" placeholder="Type a message"/>
-  <button type="submit">Send</button>
-</form>
-<button id="defaultButton" type="button">Send default</button>
-<div id="map"></div>
+<div id="sidebar">
+  <h2>Nodes</h2>
+  <ul id="nodes"></ul>
+</div>
+<div id="main">
+  <div id="map"></div>
+</div>
+<div id="messages">
+  <div id="log"></div>
+  <form id="form">
+    <input id="text" autocomplete="off" placeholder="Type a message" />
+    <button type="submit">Send</button>
+    <button id="defaultButton" type="button">Default</button>
+  </form>
+</div>
 <script>
 const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
 ws.onopen = () => console.log("WebSocket connection opened");
@@ -90,7 +104,7 @@ ws.onmessage = (ev) => {
   console.log("WebSocket message", ev.data);
   const msgEl = document.createElement("div");
   msgEl.textContent = ev.data;
-  document.getElementById("messages").appendChild(msgEl);
+  document.getElementById("log").appendChild(msgEl);
 };
 
 document.getElementById("form").onsubmit = (ev) => {
@@ -100,7 +114,7 @@ document.getElementById("form").onsubmit = (ev) => {
   ws.send(text.value);
   const echo = document.createElement("div");
   echo.textContent = "You: " + text.value;
-  document.getElementById("messages").appendChild(echo);
+  document.getElementById("log").appendChild(echo);
   text.value = "";
 };
 
@@ -109,7 +123,7 @@ document.getElementById("defaultButton").onclick = () => {
   ws.send("Hello from web");
   const echo = document.createElement("div");
   echo.textContent = "You: Hello from web";
-  document.getElementById("messages").appendChild(echo);
+  document.getElementById("log").appendChild(echo);
 };
 
 fetch("/nodes").then(r => r.json()).then(nodes => {
