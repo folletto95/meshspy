@@ -14,7 +14,7 @@ func GetMeshNodes(port string) ([]*NodeInfo, error) {
 	cmd := exec.Command("/usr/local/bin/meshtastic-go", "--port", port, "nodes")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%v: %s", err, string(output))
 	}
 	return ParseNodesOutput(output)
 }
