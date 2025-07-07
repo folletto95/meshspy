@@ -76,6 +76,7 @@ func main() {
 
 	token := client.Subscribe(cfg.CommandTopic, 0, func(c paho.Client, m paho.Message) {
 		msg := string(m.Payload())
+		log.Printf("📥 comando ricevuto (%s): %s", m.Topic(), msg)
 		if portMgr == nil {
 			log.Printf("❌ Porta seriale non inizializzata")
 			return
@@ -106,6 +107,7 @@ func main() {
 	if token.Error() != nil {
 		log.Printf("⚠️  Errore sottoscrizione comandi: %v", token.Error())
 	}
+	log.Printf("✅ in ascolto su topic comandi %s", cfg.CommandTopic)
 
 	// Inizializza il canale di uscita per la gestione dei segnali di terminazione
 	sigs := make(chan os.Signal, 1)
