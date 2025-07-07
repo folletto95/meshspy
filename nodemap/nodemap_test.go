@@ -22,3 +22,15 @@ func ExampleMap_UpdateFromProto_ignoreEmpty() {
 	fmt.Println(nm.Resolve("0x0"))
 	// Output: 0x0
 }
+
+func ExampleMap_List() {
+	nm := New()
+	nm.Update(0x1, "Alice", "A")
+	nm.Update(0x2, "Bob", "B")
+	for _, n := range nm.List() {
+		fmt.Printf("%s:%s/%s\n", n.ID, n.Long, n.Short)
+	}
+	// Output:
+	// 0x1:Alice/A
+	// 0x2:Bob/B
+}
