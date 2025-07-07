@@ -82,7 +82,11 @@ func main() {
 			log.Printf("MQTT subscribe error: %v", token.Error())
 			return
 		}
-		defer client.Unsubscribe(cfg.MQTTTopic)
+		log.Printf("✅ subscribed to %s", cfg.MQTTTopic)
+		defer func() {
+			client.Unsubscribe(cfg.MQTTTopic)
+			log.Printf("🔕 unsubscribed from %s", cfg.MQTTTopic)
+		}()
 
 		for {
 			_, message, err := conn.ReadMessage()
