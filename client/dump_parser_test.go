@@ -35,6 +35,12 @@ func TestProtoVersionForFirmware(t *testing.T) {
 	if v := ProtoVersionForFirmware("2.7.0.705515a"); v != "latest" {
 		t.Fatalf("unexpected version %s", v)
 	}
+	if v := ProtoVersionForFirmware("2.1.0"); v != "2.1" {
+		t.Fatalf("unexpected version for 2.1.x: %s", v)
+	}
+	if v := ProtoVersionForFirmware("2.1.5"); v != "2.1" {
+		t.Fatalf("unexpected version for 2.1.x: %s", v)
+	}
 	if v := ProtoVersionForFirmware(""); v != "latest" {
 		t.Fatalf("unexpected empty version %s", v)
 	}
