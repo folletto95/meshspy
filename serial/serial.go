@@ -19,9 +19,9 @@ var nodeRe = regexp.MustCompile(`(?:from|fr|id)=(0x[0-9a-fA-F]+)`)
 var fallbackRe = regexp.MustCompile(`(?:from|fr|id) (0x[0-9a-fA-F]+)`)
 var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-// ReadLoop apre la porta seriale e decodifica i messaggi protobuf in arrivo.
-// Invoca i callback forniti per NodeInfo, Telemetry e messaggi di testo.
-// Inoltre pubblica gli identificativi dei nodi rilevati tramite la funzione publish.
+// ReadLoop opens the serial port and decodes incoming protobuf messages.
+// It invokes the provided callbacks for NodeInfo, Telemetry and text messages.
+// It also publishes the identifiers of detected nodes using the publish function.
 func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleMyInfo func(*latestpb.MyNodeInfo),
@@ -203,12 +203,12 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 	}
 }
 
-// cleanLine rimuove i codici ANSI da una riga
+// cleanLine removes ANSI escape codes from a line
 func cleanLine(line string) string {
 	return ansiEscape.ReplaceAllString(line, "")
 }
 
-// parseNodeName estrae l'identificativo del nodo da una riga
+// parseNodeName extracts the node identifier from a line
 func parseNodeName(line string) string {
 	if m := nodeRe.FindStringSubmatch(line); len(m) == 2 {
 		return m[1]
@@ -219,7 +219,7 @@ func parseNodeName(line string) string {
 	return ""
 }
 
-// Send apre la porta seriale, invia i dati e chiude la porta.
+// Send opens the serial port, writes the data and closes the port.
 func Send(portName string, baud int, data string) error {
 	port, err := serial.Open(portName, &serial.Mode{BaudRate: baud})
 	if err != nil {

@@ -57,13 +57,13 @@ type NodeInfo struct {
 	IsKeyManuallyVerified bool
 }
 
-// Espressioni regolari
+// Regular expressions
 //var (
 //	nameRe = regexp.MustCompile(`long_name:"([^"]+)"`)
 //	fwRe   = regexp.MustCompile(`FirmwareVersion\s+([^\s]+)`)
 //)
 
-// GetLocalNodeInfo esegue meshtastic-go e recupera i dati dal primo nodo dopo "Radio Settings:"
+// GetLocalNodeInfo runs meshtastic-go and retrieves data from the first node after "Radio Settings:"
 func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 	var (
 		output []byte
@@ -102,7 +102,7 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 				inNodeInfo = true
 				continue
 			} else {
-				break // fermiamoci al secondo nodo
+                                break // stop at the second node
 			}
 		}
 
@@ -171,7 +171,7 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 	return node, nil
 }
 
-// ConnectMQTT crea e restituisce un client MQTT connesso
+// ConnectMQTT creates and returns a connected MQTT client
 func ConnectMQTT(cfg config.Config) (mqtt.Client, error) {
 	opts := mqtt.NewClientOptions().
 		AddBroker(cfg.MQTTBroker).

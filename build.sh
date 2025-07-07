@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Carica variabili da .env se presente xxxxxxxxxxx
+# Load variables from .env if present
 if [[ -f .env.build ]]; then
   source .env.build
 fi
 
-# Login automatico se configurato
+# Automatic login if configured
 if [[ -n "${DOCKER_USERNAME:-}" && -n "${DOCKER_PASSWORD:-}" ]]; then
   echo "$DOCKER_PASSWORD" | docker login docker.io \
     --username "$DOCKER_USERNAME" --password-stdin
@@ -14,15 +14,15 @@ fi
 
 
 
-# Parametri
+# Parameters
 IMAGE="${IMAGE:-nicbad/meshspy}"
 TAG="${TAG:-latest}"
 
-# Architetture separate
+# Separate architectures
 ARCH_ARMV6="linux/arm/v6"
 PLATFORMS_PARALLEL="linux/arm/v7,linux/amd64,linux/386,linux/arm64"
 
-# Permette di specificare piattaforme custom con BUILD_PLATFORMS
+# Allows specifying custom platforms with BUILD_PLATFORMS
 BUILD_PLATFORMS="${BUILD_PLATFORMS:-}"
 
 PROTO_REPO="https://github.com/meshtastic/protobufs.git"
@@ -55,7 +55,7 @@ git ls-remote --tags "$PROTO_REPO" | awk '{print $2}' |
   rm -rf "$TMP_DIR"
 done
 
-# Compilazione dei proto
+# Proto compilation
 if [[ -s "$PROTO_MAP_FILE" ]]; then
   echo "📦 Compilazione .proto in un unico container…"
   docker run --rm \
@@ -86,7 +86,7 @@ if [[ -s "$PROTO_MAP_FILE" ]]; then
   rm -f "$PROTO_MAP_FILE"
 fi
 
-# Verifica o rigenera go.mod
+# Check or regenerate go.mod
 REQUIRES_GO=$(grep '^go [0-9]\.' go.mod 2>/dev/null | cut -d' ' -f2 || echo "")
 if [[ ! -f go.mod || "$REQUIRES_GO" != "1.22" ]]; then
   echo "🛠 Generating or fixing go.mod and go.sum…"
@@ -106,7 +106,7 @@ fi
 docker buildx use meshspy-builder
 docker buildx inspect --bootstrap
 
-# Se BUILD_PLATFORMS è impostato, buildiamo solo per quelle
+# If BUILD_PLATFORMS is set, build only for those
 if [[ -n "$BUILD_PLATFORMS" ]]; then
   echo "🚀 Build personalizzato per: ${BUILD_PLATFORMS}"
   BASE="golang:1.22-alpine"
@@ -123,7 +123,7 @@ if [[ -n "$BUILD_PLATFORMS" ]]; then
   exit 0
 fi
 
-# 🔨 Build ARMv6 separata (buildx fallback per piattaforme legacy)
+# 🔨 Separate ARMv6 build (buildx fallback for legacy platforms)
 echo "🐹 Build ARMv6 senza buildx (solo se host ARM compatibile)"
 docker buildx build \
   --platform ${ARCH_ARMV6} \
@@ -134,7 +134,7 @@ docker buildx build \
   --build-arg BASE_IMAGE=arm32v6/golang:1.22.0-alpine \
   .
 
-# 🚀 Build multipiattaforma per le altre architetture
+# 🚀 Multi-platform build for the other architectures
 echo "🚀 Build & push multipiattaforma per: ${PLATFORMS_PARALLEL}"
 docker buildx build \
   --platform "${PLATFORMS_PARALLEL}" \
@@ -143,7 +143,7 @@ docker buildx build \
   --build-arg BASE_IMAGE=golang:1.22-alpine \
   .
 
-# 🔗 Unione ARMv6 nel manifest principale
+# 🔗 Merge ARMv6 into the main manifest
 echo "🔗 Creazione manifest multipiattaforma completo (facoltativo)"
 docker manifest create "${IMAGE}:${TAG}" \
   "${IMAGE}:${TAG}-armv6" \

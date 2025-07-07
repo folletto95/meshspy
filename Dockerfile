@@ -17,7 +17,7 @@ ENV CGO_ENABLED=1 \
 
 WORKDIR /app
 
-# 🔁 Installa git condizionalmente (Alpine vs Debian)
+# 🔁 Install git conditionally (Alpine vs Debian)
 RUN echo "🔧 Installing build deps depending on base image: ${BASE_IMAGE}" && \
     if command -v apt-get >/dev/null 2>&1; then \
         apt-get update && apt-get install -y \
@@ -34,23 +34,23 @@ RUN echo "🔧 Installing build deps depending on base image: ${BASE_IMAGE}" && 
         echo "❌ Unsupported package manager" && exit 1; \
     fi
 
-# Scarica i moduli Go del progetto principale
+# Download the main project's Go modules
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 
-# Copia i sorgenti principali
+# Copy the main sources
 COPY . .
 
-# ✅ COMPILA meshspy
+# ✅ Build meshspy
 RUN GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
     go build -ldflags="-s -w" -o meshspy ./cmd/meshspy
 
-# ✅ COMPILA webapp
+# ✅ Build webapp
 RUN GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
     go build -ldflags="-s -w" -o webapp ./cmd/webapp
 
-# ✅ CLONA E COMPILA meshtastic-go
+# ✅ Clone and build meshtastic-go
 RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
     && cd /tmp/meshtastic-go \
        && GOARM=$(echo ${TARGETVARIANT} | tr -d 'v') \
@@ -58,7 +58,7 @@ RUN git clone https://github.com/lmatte7/meshtastic-go.git /tmp/meshtastic-go \
        && chmod +x /usr/local/bin/meshtastic-go
 
 ###########################
-# 🏁 STAGE: Runtime finale
+# 🏁 STAGE: Final runtime
 ###########################
 
 ARG RUNTIME_IMAGE
@@ -66,18 +66,18 @@ FROM ${RUNTIME_IMAGE:-alpine:3.18}
 
 WORKDIR /app
 
-# Copia binario principale
+# Copy main binary
 COPY --from=builder /app/meshspy .
 
-# Copia il binario webapp e la pagina HTML
+# Copy the webapp binary and the HTML page
 RUN apk add --no-cache sqlite-libs ca-certificates && mkdir -p /app/web
 COPY --from=builder /app/webapp /usr/local/bin/webapp
 COPY --from=builder /app/cmd/webapp/index.html /app/web/index.html
 
-# Copia binario meshtastic-go
+# Copy meshtastic-go binary
 COPY --from=builder /usr/local/bin/meshtastic-go /usr/local/bin/meshtastic-go
 
-# Copia lo script di entrypoint
+# Copy the entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
@@ -85,7 +85,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # 🛠️ ENV: Runtime config
 ###########################
 
-# Copia il file .env.runtime nel container (se presente)
+# Copy the .env.runtime file into the container (if present)
 RUN echo "copio .env.runtime"
 COPY .env.runtime /app/.env.runtime
 RUN echo "copiato .env.runtime"
@@ -93,5 +93,5 @@ RUN echo "copio .env.example"
 COPY .env.example /app/.env.example
 RUN echo "copiato .env.example"
 
-# Avvio del servizio principale
+# Start the main service
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
