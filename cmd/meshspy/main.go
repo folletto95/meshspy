@@ -93,10 +93,10 @@ func main() {
 				log.Printf("✅ Messaggio personalizzato inviato: %s", text)
 			}
 		default:
-			if err := portMgr.Send(msg); err != nil {
-				log.Printf("❌ Errore invio seriale: %v", err)
+			if err := portMgr.SendTextMessage(msg); err != nil {
+				log.Printf("❌ Errore invio messaggio: %v", err)
 			} else {
-				log.Printf("➡️  Comando inoltrato alla seriale: %s", m.Payload())
+				log.Printf("✅ Messaggio inviato: %s", msg)
 			}
 		}
 	})
