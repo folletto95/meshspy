@@ -106,9 +106,12 @@ func (m *Manager) ReadLoop(debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleMyInfo func(*latestpb.MyNodeInfo),
 	handleTelemetry func(*latestpb.Telemetry),
+	handleWaypoint func(*latestpb.Waypoint),
+	handleAdmin func([]byte),
+	handleAlert func(string),
 	handleText func(string),
 	publish func(string)) {
 
 	readLoop(m.port, m.name, m.baud, debug, protoVersion, nm,
-		handleNodeInfo, handleMyInfo, handleTelemetry, handleText, publish)
+		handleNodeInfo, handleMyInfo, handleTelemetry, handleWaypoint, handleAdmin, handleAlert, handleText, publish)
 }

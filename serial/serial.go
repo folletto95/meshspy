@@ -20,12 +20,15 @@ var fallbackRe = regexp.MustCompile(`(?:from|fr|id) (0x[0-9a-fA-F]+)`)
 var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 // ReadLoop opens the serial port and decodes incoming protobuf messages.
-// It invokes the provided callbacks for NodeInfo, Telemetry and text messages.
+// It invokes the provided callbacks for NodeInfo, Telemetry, waypoint, admin, alert and text messages.
 // It also publishes the identifiers of detected nodes using the publish function.
 func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleMyInfo func(*latestpb.MyNodeInfo),
 	handleTelemetry func(*latestpb.Telemetry),
+	handleWaypoint func(*latestpb.Waypoint),
+	handleAdmin func([]byte),
+	handleAlert func(string),
 	handleText func(string),
 	publish func(string)) {
 	var (
@@ -48,13 +51,16 @@ func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *no
 	defer port.Close()
 
 	readLoop(port, portName, baud, debug, protoVersion, nm,
-		handleNodeInfo, handleMyInfo, handleTelemetry, handleText, publish)
+		handleNodeInfo, handleMyInfo, handleTelemetry, handleWaypoint, handleAdmin, handleAlert, handleText, publish)
 }
 
 func readLoop(port serial.Port, portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleMyInfo func(*latestpb.MyNodeInfo),
 	handleTelemetry func(*latestpb.Telemetry),
+	handleWaypoint func(*latestpb.Waypoint),
+	handleAdmin func([]byte),
+	handleAlert func(string),
 	handleText func(string),
 	publish func(string)) {
 	log.Printf("Listening on serial %s at %d baud", portName, baud)
@@ -99,6 +105,24 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 		if tel, err := decoder.DecodeTelemetry([]byte(line), protoVersion); err == nil {
 			if handleTelemetry != nil {
 				handleTelemetry(tel)
+			}
+			return
+		}
+		if wp, err := decoder.DecodeWaypoint([]byte(line), protoVersion); err == nil {
+			if handleWaypoint != nil {
+				handleWaypoint(wp)
+			}
+			return
+		}
+		if adm, err := decoder.DecodeAdmin([]byte(line), protoVersion); err == nil {
+			if handleAdmin != nil {
+				handleAdmin(adm)
+			}
+			return
+		}
+		if alert, err := decoder.DecodeAlert([]byte(line), protoVersion); err == nil {
+			if handleAlert != nil {
+				handleAlert(alert)
 			}
 			return
 		}
@@ -196,6 +220,18 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 			} else if tele, err := decoder.DecodeTelemetry(payload, protoVersion); err == nil {
 				if handleTelemetry != nil {
 					handleTelemetry(tele)
+				}
+			} else if wp, err := decoder.DecodeWaypoint(payload, protoVersion); err == nil {
+				if handleWaypoint != nil {
+					handleWaypoint(wp)
+				}
+			} else if adm, err := decoder.DecodeAdmin(payload, protoVersion); err == nil {
+				if handleAdmin != nil {
+					handleAdmin(adm)
+				}
+			} else if alert, err := decoder.DecodeAlert(payload, protoVersion); err == nil {
+				if handleAlert != nil {
+					handleAlert(alert)
 				}
 			}
 			buf = buf[headerLen+length:]

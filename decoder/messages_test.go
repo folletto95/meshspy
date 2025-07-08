@@ -1,6 +1,7 @@
 package decoder
 
 import (
+	"bytes"
 	"testing"
 
 	"google.golang.org/protobuf/proto"
@@ -101,5 +102,62 @@ func TestDecodeTelemetryFramedV21(t *testing.T) {
 	}
 	if dec.GetTime() != tm.GetTime() {
 		t.Fatalf("unexpected time %d", dec.GetTime())
+	}
+}
+
+func TestDecodeWaypoint(t *testing.T) {
+	wp := &pb.Waypoint{Id: 1, Name: "home"}
+	payload, err := proto.Marshal(wp)
+	if err != nil {
+		t.Fatalf("marshal waypoint: %v", err)
+	}
+	d := &pb.Data{Portnum: pb.PortNum_WAYPOINT_APP, Payload: payload}
+	mp := &pb.MeshPacket{PayloadVariant: &pb.MeshPacket_Decoded{Decoded: d}}
+	fr := &pb.FromRadio{PayloadVariant: &pb.FromRadio_Packet{Packet: mp}}
+	data, err := proto.Marshal(fr)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	dec, err := DecodeWaypoint(data, "latest")
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if dec.GetId() != wp.GetId() {
+		t.Fatalf("unexpected id %d", dec.GetId())
+	}
+}
+
+func TestDecodeAdmin(t *testing.T) {
+	payload := []byte{0x01, 0x02}
+	d := &pb.Data{Portnum: pb.PortNum_ADMIN_APP, Payload: payload}
+	mp := &pb.MeshPacket{PayloadVariant: &pb.MeshPacket_Decoded{Decoded: d}}
+	fr := &pb.FromRadio{PayloadVariant: &pb.FromRadio_Packet{Packet: mp}}
+	data, err := proto.Marshal(fr)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	dec, err := DecodeAdmin(data, "latest")
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if !bytes.Equal(dec, payload) {
+		t.Fatalf("unexpected payload %v", dec)
+	}
+}
+
+func TestDecodeAlert(t *testing.T) {
+	d := &pb.Data{Portnum: pb.PortNum_ALERT_APP, Payload: []byte("boom")}
+	mp := &pb.MeshPacket{PayloadVariant: &pb.MeshPacket_Decoded{Decoded: d}}
+	fr := &pb.FromRadio{PayloadVariant: &pb.FromRadio_Packet{Packet: mp}}
+	data, err := proto.Marshal(fr)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	txt, err := DecodeAlert(data, "latest")
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if txt != "boom" {
+		t.Fatalf("unexpected text %q", txt)
 	}
 }
