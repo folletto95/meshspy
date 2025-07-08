@@ -165,6 +165,56 @@ func (s *NodeStore) Positions(nodeID string) ([]NodePosition, error) {
 	}
 	return positions, rows.Err()
 }
+
+// AddTelemetry stores selected metrics from a Telemetry message.
+func (s *NodeStore) AddTelemetry(tel *latestpb.Telemetry) error {
+	if tel == nil {
+		return nil
+	}
+
+	dm, ok := tel.Variant.(*latestpb.Telemetry_DeviceMetrics)
+	if !ok || dm.DeviceMetrics == nil {
+		return nil
+	}
+	rec := TelemetryRecord{Time: tel.GetTime()}
+	if dm.DeviceMetrics.BatteryLevel != nil {
+		rec.BatteryLevel = dm.DeviceMetrics.GetBatteryLevel()
+	}
+	if dm.DeviceMetrics.Voltage != nil {
+		rec.Voltage = float64(dm.DeviceMetrics.GetVoltage())
+	}
+	if dm.DeviceMetrics.ChannelUtilization != nil {
+		rec.ChannelUtilization = float64(dm.DeviceMetrics.GetChannelUtilization())
+	}
+	if dm.DeviceMetrics.AirUtilTx != nil {
+		rec.AirUtilTx = float64(dm.DeviceMetrics.GetAirUtilTx())
+	}
+	if dm.DeviceMetrics.UptimeSeconds != nil {
+		rec.UptimeSeconds = dm.DeviceMetrics.GetUptimeSeconds()
+	}
+	_, err := s.db.Exec(`INSERT INTO telemetry(battery_level, voltage, channel_utilization, air_util_tx, uptime_seconds, time, received_at) VALUES(?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+		rec.BatteryLevel, rec.Voltage, rec.ChannelUtilization, rec.AirUtilTx, rec.UptimeSeconds, rec.Time)
+	return err
+}
+
+// Telemetry returns stored telemetry records ordered by time of receipt.
+func (s *NodeStore) Telemetry() ([]TelemetryRecord, error) {
+	rows, err := s.db.Query(`SELECT battery_level, voltage, channel_utilization, air_util_tx, uptime_seconds, time, received_at FROM telemetry ORDER BY received_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var recs []TelemetryRecord
+	for rows.Next() {
+		var r TelemetryRecord
+		if err := rows.Scan(&r.BatteryLevel, &r.Voltage, &r.ChannelUtilization, &r.AirUtilTx, &r.UptimeSeconds, &r.Time, &r.ReceivedAt); err != nil {
+			return nil, err
+		}
+		recs = append(recs, r)
+	}
+	return recs, rows.Err()
+}
+
 // AddWaypoint stores the coordinates from a Waypoint message in the positions table.
 func (s *NodeStore) AddWaypoint(wp *latestpb.Waypoint) error {
 	if wp == nil || wp.LatitudeI == nil || wp.LongitudeI == nil {
