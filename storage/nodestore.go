@@ -6,6 +6,7 @@ import (
 	"time"
 
 	mqttpkg "meshspy/client"
+	latestpb "meshspy/proto/latest/meshtastic"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -23,6 +24,17 @@ type NodePosition struct {
 	Altitude   int
 	Time       int64
 	ReceivedAt time.Time
+}
+
+// TelemetryRecord represents stored device metrics with timestamps.
+type TelemetryRecord struct {
+	BatteryLevel       uint32
+	Voltage            float64
+	ChannelUtilization float64
+	AirUtilTx          float64
+	UptimeSeconds      uint32
+	Time               uint32
+	ReceivedAt         time.Time
 }
 
 // NewNodeStore opens or creates a SQLite database at path and prepares the nodes table.
@@ -44,6 +56,18 @@ func NewNodeStore(path string) (*NodeStore, error) {
         latitude REAL,
         longitude REAL,
         altitude INTEGER,
+        time INTEGER,
+        received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS telemetry (
+        battery_level INTEGER,
+        voltage REAL,
+        channel_utilization REAL,
+        air_util_tx REAL,
+        uptime_seconds INTEGER,
         time INTEGER,
         received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`); err != nil {
@@ -133,4 +157,38 @@ func (s *NodeStore) Positions(nodeID string) ([]NodePosition, error) {
 		positions = append(positions, p)
 	}
 	return positions, rows.Err()
+}
+
+// AddTelemetry stores the telemetry metrics if available.
+func (s *NodeStore) AddTelemetry(tel *latestpb.Telemetry) error {
+	if tel == nil {
+		return nil
+	}
+	dm := tel.GetDeviceMetrics()
+	if dm == nil {
+		return nil
+	}
+	_, err := s.db.Exec(`INSERT INTO telemetry(battery_level, voltage, channel_utilization, air_util_tx, uptime_seconds, time, received_at)
+                VALUES(?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+		dm.GetBatteryLevel(), dm.GetVoltage(), dm.GetChannelUtilization(), dm.GetAirUtilTx(), dm.GetUptimeSeconds(), tel.GetTime())
+	return err
+}
+
+// Telemetry returns stored telemetry records ordered by insertion time.
+func (s *NodeStore) Telemetry() ([]TelemetryRecord, error) {
+	rows, err := s.db.Query(`SELECT battery_level, voltage, channel_utilization, air_util_tx, uptime_seconds, time, received_at FROM telemetry ORDER BY received_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recs []TelemetryRecord
+	for rows.Next() {
+		var r TelemetryRecord
+		if err := rows.Scan(&r.BatteryLevel, &r.Voltage, &r.ChannelUtilization, &r.AirUtilTx, &r.UptimeSeconds, &r.Time, &r.ReceivedAt); err != nil {
+			return nil, err
+		}
+		recs = append(recs, r)
+	}
+	return recs, rows.Err()
 }

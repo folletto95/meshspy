@@ -55,8 +55,6 @@ docker run -d \
   -e MQTT_BROKER=tcp://smpisa.ddns.net:1883 \
   -e MQTT_TOPIC=meshspy \
   -e MQTT_CLIENT_ID=meshspy-berry5 \
-  -e MQTT_USER="testmeshspy" \
-  -e MQTT_PASS="test1" \
   -e SEND_ALIVE_ON_START=true \
   -e NODE_DB_PATH=/app/data/nodes.db \
   $IMAGE_NAME

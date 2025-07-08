@@ -259,6 +259,7 @@ func main() {
 				}
 			}
 		}, func(tel *latestpb.Telemetry) {
+
 			j, _ := protojson.Marshal(tel)
 			log.Printf("Telemetry %s", j)
 			if err := mgmt.SendTelemetry(tel); err != nil {

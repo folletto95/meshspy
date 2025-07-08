@@ -5,7 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"google.golang.org/protobuf/proto"
 	mqttpkg "meshspy/client"
+	latestpb "meshspy/proto/latest/meshtastic"
 )
 
 func TestNewNodeStore(t *testing.T) {
@@ -127,5 +129,39 @@ func TestNodeStoreListOrder(t *testing.T) {
 		if n.ID != want[i] {
 			t.Fatalf("unexpected order: got %v want %v", n.ID, want[i])
 		}
+	}
+}
+
+func TestNodeStoreAddTelemetry(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "nodes.db")
+
+	ns, err := NewNodeStore(dbPath)
+	if err != nil {
+		t.Fatalf("NewNodeStore returned error: %v", err)
+	}
+	defer ns.Close()
+
+	tel := &latestpb.Telemetry{
+		Time: 42,
+		Variant: &latestpb.Telemetry_DeviceMetrics{DeviceMetrics: &latestpb.DeviceMetrics{
+			BatteryLevel: proto.Uint32(90),
+			Voltage:      proto.Float32(3.7),
+		}},
+	}
+	if err := ns.AddTelemetry(tel); err != nil {
+		t.Fatalf("AddTelemetry returned error: %v", err)
+	}
+
+	recs, err := ns.Telemetry()
+	if err != nil {
+		t.Fatalf("Telemetry returned error: %v", err)
+	}
+	if len(recs) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(recs))
+	}
+	r := recs[0]
+	if r.BatteryLevel != 90 || r.Time != 42 || (r.Voltage < 3.69 || r.Voltage > 3.71) {
+		t.Fatalf("unexpected record %+v", r)
 	}
 }
