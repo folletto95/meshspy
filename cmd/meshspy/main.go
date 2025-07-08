@@ -13,8 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"encoding/base64"
-
 	"github.com/joho/godotenv" // ← used to read .env files
 
 	mqttpkg "meshspy/client"
@@ -24,8 +22,6 @@ import (
 	latestpb "meshspy/proto/latest/meshtastic"
 	"meshspy/serial"
 	"meshspy/storage"
-
-	"google.golang.org/protobuf/encoding/protojson"
 
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
