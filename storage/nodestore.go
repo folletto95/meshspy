@@ -212,3 +212,45 @@ func (s *NodeStore) AddWaypoint(wp *latestpb.Waypoint) error {
                 VALUES(?, ?, ?, 0, 0, CURRENT_TIMESTAMP)`, id, lat, lon)
 	return err
 }
+
+// AddTelemetry stores telemetry metrics in the database. Only DeviceMetrics
+// from the Telemetry message are saved when present.
+func (s *NodeStore) AddTelemetry(tel *latestpb.Telemetry) error {
+	if tel == nil {
+		return nil
+	}
+	dm := tel.GetDeviceMetrics()
+	if dm == nil {
+		return nil
+	}
+	_, err := s.db.Exec(`INSERT INTO telemetry(
+                battery_level, voltage, channel_utilization, air_util_tx,
+                uptime_seconds, time, received_at)
+                VALUES(?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+		dm.GetBatteryLevel(), dm.GetVoltage(), dm.GetChannelUtilization(),
+		dm.GetAirUtilTx(), dm.GetUptimeSeconds(), tel.GetTime())
+	return err
+}
+
+// Telemetry returns stored telemetry records ordered by the time they were
+// received.
+func (s *NodeStore) Telemetry() ([]TelemetryRecord, error) {
+	rows, err := s.db.Query(`SELECT battery_level, voltage, channel_utilization,
+                air_util_tx, uptime_seconds, time, received_at FROM telemetry
+                ORDER BY received_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recs []TelemetryRecord
+	for rows.Next() {
+		var r TelemetryRecord
+		if err := rows.Scan(&r.BatteryLevel, &r.Voltage, &r.ChannelUtilization,
+			&r.AirUtilTx, &r.UptimeSeconds, &r.Time, &r.ReceivedAt); err != nil {
+			return nil, err
+		}
+		recs = append(recs, r)
+	}
+	return recs, rows.Err()
+}
