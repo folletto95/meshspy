@@ -254,7 +254,11 @@ func main() {
 					log.Printf("⚠️ invio info nodo al server: %v", err)
 				}
 			}
-		}, nil, nil, nil, nil, nil, func(data string) {
+		}, func(tel *latestpb.Telemetry) {
+			if err := nodeStore.AddTelemetry(tel); err != nil {
+				log.Printf("⚠️ salvataggio telemetry: %v", err)
+			}
+		}, nil, nil, nil, nil, func(data string) {
 			// Publish every received message on the MQTT topic
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()
