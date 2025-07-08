@@ -56,3 +56,25 @@ func NodeInfoFromMyInfo(mi *latestpb.MyNodeInfo) *NodeInfo {
 		Num: mi.GetMyNodeNum(),
 	}
 }
+
+// NodeInfoFromTelemetry converts telemetry metrics from a node into a partial
+// NodeInfo structure using the provided node number.
+func NodeInfoFromTelemetry(nodeNum uint32, tm *latestpb.Telemetry) *NodeInfo {
+	if tm == nil {
+		return nil
+	}
+	dm := tm.GetDeviceMetrics()
+	if dm == nil {
+		return nil
+	}
+	info := &NodeInfo{
+		ID:            fmt.Sprintf("0x%x", nodeNum),
+		Num:           nodeNum,
+		BatteryLevel:  int(dm.GetBatteryLevel()),
+		Voltage:       float64(dm.GetVoltage()),
+		ChannelUtil:   float64(dm.GetChannelUtilization()),
+		AirUtilTx:     float64(dm.GetAirUtilTx()),
+		UptimeSeconds: int(dm.GetUptimeSeconds()),
+	}
+	return info
+}

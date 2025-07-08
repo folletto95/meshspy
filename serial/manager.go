@@ -105,7 +105,7 @@ func (m *Manager) SendTextMessage(text string) error {
 func (m *Manager) ReadLoop(debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleMyInfo func(*latestpb.MyNodeInfo),
-	handleTelemetry func(*latestpb.Telemetry),
+	handleTelemetry func(uint32, *latestpb.Telemetry),
 	handleText func(string),
 	publish func(string)) {
 

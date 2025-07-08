@@ -77,6 +77,31 @@ func TestDecodeTelemetry(t *testing.T) {
 	}
 }
 
+func TestDecodeTelemetryWithID(t *testing.T) {
+	tm := &pb.Telemetry{Time: 1, Variant: &pb.Telemetry_DeviceMetrics{DeviceMetrics: &pb.DeviceMetrics{}}}
+	payload, err := proto.Marshal(tm)
+	if err != nil {
+		t.Fatalf("marshal telemetry: %v", err)
+	}
+	d := &pb.Data{Portnum: pb.PortNum_TELEMETRY_APP, Payload: payload}
+	mp := &pb.MeshPacket{From: 0x42, PayloadVariant: &pb.MeshPacket_Decoded{Decoded: d}}
+	fr := &pb.FromRadio{PayloadVariant: &pb.FromRadio_Packet{Packet: mp}}
+	data, err := proto.Marshal(fr)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	id, dec, err := DecodeTelemetryWithID(data, "latest")
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if id != 0x42 {
+		t.Fatalf("unexpected id %x", id)
+	}
+	if dec.GetTime() != tm.GetTime() {
+		t.Fatalf("unexpected time %d", dec.GetTime())
+	}
+}
+
 func TestDecodeTelemetryFramedV21(t *testing.T) {
 	tm := &pb.Telemetry{
 		Time:    777,

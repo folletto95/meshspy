@@ -25,7 +25,7 @@ var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleMyInfo func(*latestpb.MyNodeInfo),
-	handleTelemetry func(*latestpb.Telemetry),
+	handleTelemetry func(uint32, *latestpb.Telemetry),
 	handleText func(string),
 	publish func(string)) {
 	var (
@@ -54,7 +54,7 @@ func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *no
 func readLoop(port serial.Port, portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleMyInfo func(*latestpb.MyNodeInfo),
-	handleTelemetry func(*latestpb.Telemetry),
+	handleTelemetry func(uint32, *latestpb.Telemetry),
 	handleText func(string),
 	publish func(string)) {
 	log.Printf("Listening on serial %s at %d baud", portName, baud)
@@ -96,9 +96,9 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 			}
 			return
 		}
-		if tel, err := decoder.DecodeTelemetry([]byte(line), protoVersion); err == nil {
+		if node, tel, err := decoder.DecodeTelemetryWithID([]byte(line), protoVersion); err == nil {
 			if handleTelemetry != nil {
-				handleTelemetry(tel)
+				handleTelemetry(node, tel)
 			}
 			return
 		}
@@ -193,9 +193,9 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 				if handleText != nil {
 					handleText(txt)
 				}
-			} else if tele, err := decoder.DecodeTelemetry(payload, protoVersion); err == nil {
+			} else if node, tele, err := decoder.DecodeTelemetryWithID(payload, protoVersion); err == nil {
 				if handleTelemetry != nil {
-					handleTelemetry(tele)
+					handleTelemetry(node, tele)
 				}
 			}
 			buf = buf[headerLen+length:]
