@@ -92,8 +92,7 @@ additional settings from `.env.runtime` when present:
 - `MQTT_TOPIC=meshspy`
 -  (avoid wildcards here, as publishing to topics like `mesh/#` is not supported)
 - `MQTT_CLIENT_ID=meshspy-kali`
-- `MQTT_USER=testmeshspy`
-- `MQTT_PASS=test1`
+- `MQTT_USER` and `MQTT_PASS` can be set in `.env.runtime` when the broker requires authentication
 - `SEND_ALIVE_ON_START=true`
   (set to `false` if you do **not** want the service to send and log a `MeshSpy Alive`
   message on start-up)
