@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"time"
 
 	mqttpkg "meshspy/client"
@@ -27,8 +30,22 @@ type NodePosition struct {
 	ReceivedAt time.Time
 }
 
+// TelemetryRecord represents stored device metrics with timestamps.
+type TelemetryRecord struct {
+	BatteryLevel       uint32
+	Voltage            float64
+	ChannelUtilization float64
+	AirUtilTx          float64
+	UptimeSeconds      uint32
+	Time               uint32
+	ReceivedAt         time.Time
+}
+
 // NewNodeStore opens or creates a SQLite database at path and prepares the nodes table.
 func NewNodeStore(path string) (*NodeStore, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return nil, err
+	}
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
@@ -46,6 +63,18 @@ func NewNodeStore(path string) (*NodeStore, error) {
         latitude REAL,
         longitude REAL,
         altitude INTEGER,
+        time INTEGER,
+        received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS telemetry (
+        battery_level INTEGER,
+        voltage REAL,
+        channel_utilization REAL,
+        air_util_tx REAL,
+        uptime_seconds INTEGER,
         time INTEGER,
         received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`); err != nil {
@@ -136,7 +165,6 @@ func (s *NodeStore) Positions(nodeID string) ([]NodePosition, error) {
 	}
 	return positions, rows.Err()
 }
-
 // AddWaypoint stores the coordinates from a Waypoint message in the positions table.
 func (s *NodeStore) AddWaypoint(wp *latestpb.Waypoint) error {
 	if wp == nil || wp.LatitudeI == nil || wp.LongitudeI == nil {
