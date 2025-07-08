@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -258,39 +259,21 @@ func main() {
 					log.Printf("⚠️ invio info nodo al server: %v", err)
 				}
 			}
-		}, func(tel *latestpb.Telemetry) {
-
-			j, _ := protojson.Marshal(tel)
-			log.Printf("Telemetry %s", j)
-			if err := mgmt.SendTelemetry(tel); err != nil {
-				log.Printf("warning sending telemetry: %v", err)
-			}
-			token := client.Publish(cfg.MQTTTopic+"/telemetry", 0, false, j)
-			token.Wait()
+		}, func(tm *latestpb.Telemetry) {
+			b, _ := json.Marshal(tm)
+			log.Printf("📊 Telemetry: %s", string(b))
 		}, func(wp *latestpb.Waypoint) {
-			j, _ := protojson.Marshal(wp)
-			log.Printf("Waypoint %s", j)
-			if err := mgmt.SendWaypoint(wp); err != nil {
-				log.Printf("warning sending waypoint: %v", err)
+			if err := nodeStore.AddWaypoint(wp); err != nil {
+				log.Printf("⚠️ salvataggio waypoint: %v", err)
 			}
-			token := client.Publish(cfg.MQTTTopic+"/waypoint", 0, false, j)
-			token.Wait()
 		}, func(adm []byte) {
-			enc := base64.StdEncoding.EncodeToString(adm)
-			log.Printf("Admin %s", enc)
-			if err := mgmt.SendAdmin(adm); err != nil {
-				log.Printf("warning sending admin: %v", err)
-			}
-			token := client.Publish(cfg.MQTTTopic+"/admin", 0, false, enc)
-			token.Wait()
+			log.Printf("⚙️ Admin: %x", adm)
 		}, func(alert string) {
-			log.Printf("Alert %s", alert)
-			if err := mgmt.SendAlert(alert); err != nil {
-				log.Printf("warning sending alert: %v", err)
-			}
-			token := client.Publish(cfg.MQTTTopic+"/alert", 0, false, alert)
-			token.Wait()
-		}, nil, func(data string) {
+			log.Printf("🚨 Alert: %s", alert)
+		}, func(txt string) {
+			log.Printf("💬 Text: %s", txt)
+		}, func(data string) {
+
 			// Publish every received message on the MQTT topic
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()

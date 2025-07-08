@@ -3,8 +3,10 @@ package storage
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+
 	"time"
 
 	mqttpkg "meshspy/client"
@@ -163,37 +165,15 @@ func (s *NodeStore) Positions(nodeID string) ([]NodePosition, error) {
 	}
 	return positions, rows.Err()
 }
-
-// AddTelemetry stores the telemetry metrics if available.
-func (s *NodeStore) AddTelemetry(tel *latestpb.Telemetry) error {
-	if tel == nil {
+// AddWaypoint stores the coordinates from a Waypoint message in the positions table.
+func (s *NodeStore) AddWaypoint(wp *latestpb.Waypoint) error {
+	if wp == nil || wp.LatitudeI == nil || wp.LongitudeI == nil {
 		return nil
 	}
-	dm := tel.GetDeviceMetrics()
-	if dm == nil {
-		return nil
-	}
-	_, err := s.db.Exec(`INSERT INTO telemetry(battery_level, voltage, channel_utilization, air_util_tx, uptime_seconds, time, received_at)
-                VALUES(?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-		dm.GetBatteryLevel(), dm.GetVoltage(), dm.GetChannelUtilization(), dm.GetAirUtilTx(), dm.GetUptimeSeconds(), tel.GetTime())
+	id := fmt.Sprintf("0x%x", wp.GetId())
+	lat := float64(wp.GetLatitudeI()) / 1e7
+	lon := float64(wp.GetLongitudeI()) / 1e7
+	_, err := s.db.Exec(`INSERT INTO positions(node_id, latitude, longitude, altitude, time, received_at)
+                VALUES(?, ?, ?, 0, 0, CURRENT_TIMESTAMP)`, id, lat, lon)
 	return err
-}
-
-// Telemetry returns stored telemetry records ordered by insertion time.
-func (s *NodeStore) Telemetry() ([]TelemetryRecord, error) {
-	rows, err := s.db.Query(`SELECT battery_level, voltage, channel_utilization, air_util_tx, uptime_seconds, time, received_at FROM telemetry ORDER BY received_at`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var recs []TelemetryRecord
-	for rows.Next() {
-		var r TelemetryRecord
-		if err := rows.Scan(&r.BatteryLevel, &r.Voltage, &r.ChannelUtilization, &r.AirUtilTx, &r.UptimeSeconds, &r.Time, &r.ReceivedAt); err != nil {
-			return nil, err
-		}
-		recs = append(recs, r)
-	}
-	return recs, rows.Err()
 }
