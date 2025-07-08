@@ -26,6 +26,27 @@ func TestNewNodeStore(t *testing.T) {
 	}
 }
 
+// TestNewNodeStoreCreatesDir ensures the database directory is created when
+// it does not already exist. NODE_DB_PATH is used to simulate the value passed
+// from the application.
+func TestNewNodeStoreCreatesDir(t *testing.T) {
+	base := t.TempDir()
+	dbPath := filepath.Join(base, "sub", "nodes.db")
+	if err := os.Setenv("NODE_DB_PATH", dbPath); err != nil {
+		t.Fatalf("Setenv returned error: %v", err)
+	}
+	defer os.Unsetenv("NODE_DB_PATH")
+
+	ns, err := NewNodeStore(os.Getenv("NODE_DB_PATH"))
+	if err != nil {
+		t.Fatalf("NewNodeStore returned error: %v", err)
+	}
+	ns.Close()
+	if _, err := os.Stat(dbPath); err != nil {
+		t.Fatalf("database file not created: %v", err)
+	}
+}
+
 func TestNodeStoreUpsertAndList(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "nodes.db")
