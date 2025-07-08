@@ -76,6 +76,9 @@ sends a `MeshSpy Alive` message on the configured MQTT topic and to the node
 itself using `meshtastic-go message send -m`, so other components can detect that
 the service is running and nodes are reached.
 
+The MQTT client automatically resumes subscriptions when the connection to the
+broker is restored.
+
 
 ### `start_meshspy.sh` helper
 
