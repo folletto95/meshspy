@@ -95,3 +95,28 @@ func TestNodeInfoFromMyInfo(t *testing.T) {
 		t.Fatalf("unexpected result: %+v", info)
 	}
 }
+
+func TestNodeInfoFromTelemetry(t *testing.T) {
+	tm := &pb.Telemetry{
+		Variant: &pb.Telemetry_DeviceMetrics{DeviceMetrics: &pb.DeviceMetrics{
+			BatteryLevel:       protoUint32(50),
+			Voltage:            protoFloat32(3.7),
+			ChannelUtilization: protoFloat32(1.2),
+			AirUtilTx:          protoFloat32(0.5),
+			UptimeSeconds:      protoUint32(99),
+		}},
+	}
+	info := NodeInfoFromTelemetry(0x42, tm)
+	if info == nil {
+		t.Fatal("nil info")
+	}
+	if info.ID != "0x42" || info.Num != 0x42 {
+		t.Fatalf("unexpected id: %+v", info)
+	}
+	if info.BatteryLevel != 50 || info.UptimeSeconds != 99 {
+		t.Fatalf("metrics mismatch: %+v", info)
+	}
+	if math.Abs(info.Voltage-3.7) > 1e-6 || math.Abs(info.ChannelUtil-1.2) > 1e-6 {
+		t.Fatalf("float metrics mismatch: %+v", info)
+	}
+}

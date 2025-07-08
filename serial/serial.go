@@ -62,6 +62,8 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 	const (
 		start1    = 0x94
 		start2    = 0xC3
+		start1v21 = 0x44
+		start2v21 = 0x03
 		headerLen = 4
 		maxSize   = 512
 	)
@@ -149,7 +151,8 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 			if len(buf) < 2 {
 				break
 			}
-			if buf[0] != start1 || buf[1] != start2 {
+			if (buf[0] != start1 || buf[1] != start2) &&
+				(buf[0] != start1v21 || buf[1] != start2v21) {
 				ch := buf[0]
 				buf = buf[1:]
 				if ch == '\n' {
