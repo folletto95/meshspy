@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -254,7 +255,20 @@ func main() {
 					log.Printf("⚠️ invio info nodo al server: %v", err)
 				}
 			}
-		}, nil, nil, nil, nil, nil, func(data string) {
+		}, func(tm *latestpb.Telemetry) {
+			b, _ := json.Marshal(tm)
+			log.Printf("📊 Telemetry: %s", string(b))
+		}, func(wp *latestpb.Waypoint) {
+			if err := nodeStore.AddWaypoint(wp); err != nil {
+				log.Printf("⚠️ salvataggio waypoint: %v", err)
+			}
+		}, func(adm []byte) {
+			log.Printf("⚙️ Admin: %x", adm)
+		}, func(alert string) {
+			log.Printf("🚨 Alert: %s", alert)
+		}, func(txt string) {
+			log.Printf("💬 Text: %s", txt)
+		}, func(data string) {
 			// Publish every received message on the MQTT topic
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()

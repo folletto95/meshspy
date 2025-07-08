@@ -3,9 +3,11 @@ package storage
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	mqttpkg "meshspy/client"
+	latestpb "meshspy/proto/latest/meshtastic"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -133,4 +135,17 @@ func (s *NodeStore) Positions(nodeID string) ([]NodePosition, error) {
 		positions = append(positions, p)
 	}
 	return positions, rows.Err()
+}
+
+// AddWaypoint stores the coordinates from a Waypoint message in the positions table.
+func (s *NodeStore) AddWaypoint(wp *latestpb.Waypoint) error {
+	if wp == nil || wp.LatitudeI == nil || wp.LongitudeI == nil {
+		return nil
+	}
+	id := fmt.Sprintf("0x%x", wp.GetId())
+	lat := float64(wp.GetLatitudeI()) / 1e7
+	lon := float64(wp.GetLongitudeI()) / 1e7
+	_, err := s.db.Exec(`INSERT INTO positions(node_id, latitude, longitude, altitude, time, received_at)
+                VALUES(?, ?, ?, 0, 0, CURRENT_TIMESTAMP)`, id, lat, lon)
+	return err
 }
