@@ -83,3 +83,100 @@ func DecodeText(data []byte, version string) (string, error) {
 		return "", fmt.Errorf("unsupported proto version: %s", version)
 	}
 }
+
+// DecodeWaypoint decodes a Waypoint message payload from the given data.
+func DecodeWaypoint(data []byte, version string) (*latestpb.Waypoint, error) {
+	var err error
+	data, err = stripFrame(data)
+	if err != nil {
+		return nil, err
+	}
+	switch version {
+	case "", "latest", "2.1":
+		var fr latestpb.FromRadio
+		if err := proto.Unmarshal(data, &fr); err == nil {
+			if pkt := fr.GetPacket(); pkt != nil {
+				if dec := pkt.GetDecoded(); dec != nil {
+					if dec.GetPortnum() == latestpb.PortNum_WAYPOINT_APP {
+						var wp latestpb.Waypoint
+						if err := proto.Unmarshal(dec.GetPayload(), &wp); err == nil {
+							return &wp, nil
+						}
+					}
+				}
+			}
+		}
+		var d latestpb.Data
+		if err := proto.Unmarshal(data, &d); err == nil && d.GetPortnum() == latestpb.PortNum_WAYPOINT_APP {
+			var wp latestpb.Waypoint
+			if err := proto.Unmarshal(d.GetPayload(), &wp); err == nil {
+				return &wp, nil
+			}
+		}
+		var wp latestpb.Waypoint
+		if err := proto.Unmarshal(data, &wp); err == nil && (wp.Id != 0 || wp.Name != "") {
+			return &wp, nil
+		}
+		return nil, fmt.Errorf("not a Waypoint message")
+	default:
+		return nil, fmt.Errorf("unsupported proto version: %s", version)
+	}
+}
+
+// DecodeAdmin extracts the admin payload from the given data.
+func DecodeAdmin(data []byte, version string) ([]byte, error) {
+	var err error
+	data, err = stripFrame(data)
+	if err != nil {
+		return nil, err
+	}
+	switch version {
+	case "", "latest", "2.1":
+		var fr latestpb.FromRadio
+		if err := proto.Unmarshal(data, &fr); err == nil {
+			if pkt := fr.GetPacket(); pkt != nil {
+				if dec := pkt.GetDecoded(); dec != nil {
+					if dec.GetPortnum() == latestpb.PortNum_ADMIN_APP {
+						return dec.GetPayload(), nil
+					}
+				}
+			}
+		}
+		var d latestpb.Data
+		if err := proto.Unmarshal(data, &d); err == nil && d.GetPortnum() == latestpb.PortNum_ADMIN_APP {
+			return d.GetPayload(), nil
+		}
+		return nil, fmt.Errorf("not an admin message")
+	default:
+		return nil, fmt.Errorf("unsupported proto version: %s", version)
+	}
+}
+
+// DecodeAlert extracts a critical alert text message from the given data.
+func DecodeAlert(data []byte, version string) (string, error) {
+	var err error
+	data, err = stripFrame(data)
+	if err != nil {
+		return "", err
+	}
+	switch version {
+	case "", "latest", "2.1":
+		var fr latestpb.FromRadio
+		if err := proto.Unmarshal(data, &fr); err == nil {
+			if pkt := fr.GetPacket(); pkt != nil {
+				if dec := pkt.GetDecoded(); dec != nil {
+					if dec.GetPortnum() == latestpb.PortNum_ALERT_APP {
+						return string(dec.GetPayload()), nil
+					}
+				}
+			}
+		}
+		var d latestpb.Data
+		if err := proto.Unmarshal(data, &d); err == nil && d.GetPortnum() == latestpb.PortNum_ALERT_APP {
+			return string(d.GetPayload()), nil
+		}
+		return "", fmt.Errorf("not an alert message")
+	default:
+		return "", fmt.Errorf("unsupported proto version: %s", version)
+	}
+}
