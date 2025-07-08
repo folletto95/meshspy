@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"encoding/base64"
+
 	"github.com/joho/godotenv" // ← used to read .env files
 
 	mqttpkg "meshspy/client"
@@ -21,6 +23,8 @@ import (
 	latestpb "meshspy/proto/latest/meshtastic"
 	"meshspy/serial"
 	"meshspy/storage"
+
+	"google.golang.org/protobuf/encoding/protojson"
 
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
@@ -254,7 +258,38 @@ func main() {
 					log.Printf("⚠️ invio info nodo al server: %v", err)
 				}
 			}
-		}, nil, nil, nil, nil, nil, func(data string) {
+		}, func(tel *latestpb.Telemetry) {
+			j, _ := protojson.Marshal(tel)
+			log.Printf("Telemetry %s", j)
+			if err := mgmt.SendTelemetry(tel); err != nil {
+				log.Printf("warning sending telemetry: %v", err)
+			}
+			token := client.Publish(cfg.MQTTTopic+"/telemetry", 0, false, j)
+			token.Wait()
+		}, func(wp *latestpb.Waypoint) {
+			j, _ := protojson.Marshal(wp)
+			log.Printf("Waypoint %s", j)
+			if err := mgmt.SendWaypoint(wp); err != nil {
+				log.Printf("warning sending waypoint: %v", err)
+			}
+			token := client.Publish(cfg.MQTTTopic+"/waypoint", 0, false, j)
+			token.Wait()
+		}, func(adm []byte) {
+			enc := base64.StdEncoding.EncodeToString(adm)
+			log.Printf("Admin %s", enc)
+			if err := mgmt.SendAdmin(adm); err != nil {
+				log.Printf("warning sending admin: %v", err)
+			}
+			token := client.Publish(cfg.MQTTTopic+"/admin", 0, false, enc)
+			token.Wait()
+		}, func(alert string) {
+			log.Printf("Alert %s", alert)
+			if err := mgmt.SendAlert(alert); err != nil {
+				log.Printf("warning sending alert: %v", err)
+			}
+			token := client.Publish(cfg.MQTTTopic+"/alert", 0, false, alert)
+			token.Wait()
+		}, nil, func(data string) {
 			// Publish every received message on the MQTT topic
 			token := client.Publish(cfg.MQTTTopic, 0, false, data)
 			token.Wait()

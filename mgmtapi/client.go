@@ -2,6 +2,7 @@ package mgmtapi
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,6 +11,9 @@ import (
 
 	mqttpkg "meshspy/client"
 	"meshspy/storage"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	latestpb "meshspy/proto/latest/meshtastic"
 )
 
 // Client communicates with the management server HTTP API.
@@ -125,4 +129,110 @@ func (c *Client) ListPositions(nodeID string) ([]storage.NodePosition, error) {
 		return nil, err
 	}
 	return pos, nil
+}
+
+// SendTelemetry uploads a Telemetry message to the management server.
+func (c *Client) SendTelemetry(t *latestpb.Telemetry) error {
+	if c == nil || t == nil {
+		return nil
+	}
+	b, err := protojson.Marshal(t)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/api/telemetry", bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("server returned %s", resp.Status)
+	}
+	return nil
+}
+
+// SendWaypoint uploads a Waypoint message to the management server.
+func (c *Client) SendWaypoint(wp *latestpb.Waypoint) error {
+	if c == nil || wp == nil {
+		return nil
+	}
+	b, err := protojson.Marshal(wp)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/api/waypoints", bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("server returned %s", resp.Status)
+	}
+	return nil
+}
+
+// SendAdmin uploads raw admin payload to the management server encoded as base64.
+func (c *Client) SendAdmin(payload []byte) error {
+	if c == nil || payload == nil {
+		return nil
+	}
+	data := struct {
+		Payload string `json:"payload"`
+	}{Payload: base64.StdEncoding.EncodeToString(payload)}
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/api/admin", bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("server returned %s", resp.Status)
+	}
+	return nil
+}
+
+// SendAlert uploads an alert text message to the management server.
+func (c *Client) SendAlert(text string) error {
+	if c == nil || text == "" {
+		return nil
+	}
+	data := struct {
+		Text string `json:"text"`
+	}{Text: text}
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/api/alerts", bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("server returned %s", resp.Status)
+	}
+	return nil
 }
