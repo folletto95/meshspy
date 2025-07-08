@@ -120,3 +120,30 @@ func TestNodeInfoFromTelemetry(t *testing.T) {
 		t.Fatalf("float metrics mismatch: %+v", info)
 	}
 }
+
+func TestNodeInfoFromPosition(t *testing.T) {
+	pos := &pb.Position{
+		LatitudeI:      protoInt32(1234567),
+		LongitudeI:     protoInt32(-7654321),
+		Altitude:       protoInt32(100),
+		Time:           42,
+		LocationSource: pb.Position_LOC_INTERNAL,
+	}
+	info := NodeInfoFromPosition(0x99, pos)
+	if info == nil {
+		t.Fatal("nil info")
+	}
+	if info.ID != "0x99" || info.Num != 0x99 {
+		t.Fatalf("unexpected id: %+v", info)
+	}
+	if math.Abs(info.Latitude-float64(1234567)/1e7) > 1e-6 ||
+		math.Abs(info.Longitude-float64(-7654321)/1e7) > 1e-6 {
+		t.Fatalf("coords mismatch: %+v", info)
+	}
+	if info.LocationSource != pb.Position_LOC_INTERNAL.String() {
+		t.Fatalf("loc source mismatch: %s", info.LocationSource)
+	}
+	if info.Altitude != 100 || info.LocationTime != 42 {
+		t.Fatalf("alt/time mismatch: %+v", info)
+	}
+}

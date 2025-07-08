@@ -26,6 +26,7 @@ func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *no
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleMyInfo func(*latestpb.MyNodeInfo),
 	handleTelemetry func(uint32, *latestpb.Telemetry),
+	handlePosition func(uint32, *latestpb.Position),
 	handleText func(string),
 	publish func(string)) {
 	var (
@@ -48,13 +49,14 @@ func ReadLoop(portName string, baud int, debug bool, protoVersion string, nm *no
 	defer port.Close()
 
 	readLoop(port, portName, baud, debug, protoVersion, nm,
-		handleNodeInfo, handleMyInfo, handleTelemetry, handleText, publish)
+		handleNodeInfo, handleMyInfo, handleTelemetry, handlePosition, handleText, publish)
 }
 
 func readLoop(port serial.Port, portName string, baud int, debug bool, protoVersion string, nm *nodemap.Map,
 	handleNodeInfo func(*latestpb.NodeInfo),
 	handleMyInfo func(*latestpb.MyNodeInfo),
 	handleTelemetry func(uint32, *latestpb.Telemetry),
+	handlePosition func(uint32, *latestpb.Position),
 	handleText func(string),
 	publish func(string)) {
 	log.Printf("Listening on serial %s at %d baud", portName, baud)
@@ -101,6 +103,12 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 		if node, tel, err := decoder.DecodeTelemetryWithID([]byte(line), protoVersion); err == nil {
 			if handleTelemetry != nil {
 				handleTelemetry(node, tel)
+			}
+			return
+		}
+		if node, pos, err := decoder.DecodePositionWithID([]byte(line), protoVersion); err == nil {
+			if handlePosition != nil {
+				handlePosition(node, pos)
 			}
 			return
 		}
@@ -199,6 +207,10 @@ func readLoop(port serial.Port, portName string, baud int, debug bool, protoVers
 			} else if node, tele, err := decoder.DecodeTelemetryWithID(payload, protoVersion); err == nil {
 				if handleTelemetry != nil {
 					handleTelemetry(node, tele)
+				}
+			} else if node, pos, err := decoder.DecodePositionWithID(payload, protoVersion); err == nil {
+				if handlePosition != nil {
+					handlePosition(node, pos)
 				}
 			}
 			buf = buf[headerLen+length:]

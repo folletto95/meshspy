@@ -78,3 +78,21 @@ func NodeInfoFromTelemetry(nodeNum uint32, tm *latestpb.Telemetry) *NodeInfo {
 	}
 	return info
 }
+
+// NodeInfoFromPosition converts a Position message into a partial NodeInfo
+// structure using the provided node number.
+func NodeInfoFromPosition(nodeNum uint32, pos *latestpb.Position) *NodeInfo {
+	if pos == nil {
+		return nil
+	}
+	info := &NodeInfo{
+		ID:             fmt.Sprintf("0x%x", nodeNum),
+		Num:            nodeNum,
+		Latitude:       float64(pos.GetLatitudeI()) / 1e7,
+		Longitude:      float64(pos.GetLongitudeI()) / 1e7,
+		Altitude:       int(pos.GetAltitude()),
+		LocationTime:   int64(pos.GetTime()),
+		LocationSource: pos.GetLocationSource().String(),
+	}
+	return info
+}

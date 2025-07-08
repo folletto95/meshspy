@@ -128,3 +128,74 @@ func TestDecodeTelemetryFramedV21(t *testing.T) {
 		t.Fatalf("unexpected time %d", dec.GetTime())
 	}
 }
+
+func TestDecodePositionWithID(t *testing.T) {
+	pos := &pb.Position{LatitudeI: protoInt32(1), LongitudeI: protoInt32(2)}
+	payload, err := proto.Marshal(pos)
+	if err != nil {
+		t.Fatalf("marshal position: %v", err)
+	}
+	d := &pb.Data{Portnum: pb.PortNum_POSITION_APP, Payload: payload}
+	mp := &pb.MeshPacket{From: 0x55, PayloadVariant: &pb.MeshPacket_Decoded{Decoded: d}}
+	fr := &pb.FromRadio{PayloadVariant: &pb.FromRadio_Packet{Packet: mp}}
+	data, err := proto.Marshal(fr)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	id, dec, err := DecodePositionWithID(data, "latest")
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if id != 0x55 {
+		t.Fatalf("unexpected id %x", id)
+	}
+	if dec.GetLatitudeI() != 1 || dec.GetLongitudeI() != 2 {
+		t.Fatalf("unexpected pos %+v", dec)
+	}
+}
+
+func TestDecodeWaypointWithID(t *testing.T) {
+	wp := &pb.Waypoint{Id: 1, Name: "test"}
+	payload, err := proto.Marshal(wp)
+	if err != nil {
+		t.Fatalf("marshal waypoint: %v", err)
+	}
+	d := &pb.Data{Portnum: pb.PortNum_WAYPOINT_APP, Payload: payload}
+	mp := &pb.MeshPacket{From: 0x2, PayloadVariant: &pb.MeshPacket_Decoded{Decoded: d}}
+	fr := &pb.FromRadio{PayloadVariant: &pb.FromRadio_Packet{Packet: mp}}
+	data, err := proto.Marshal(fr)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	id, dec, err := DecodeWaypointWithID(data, "latest")
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if id != 0x2 || dec.GetId() != 1 {
+		t.Fatalf("decode mismatch: id %x wp %+v", id, dec)
+	}
+}
+
+func TestDecodeNeighborInfoWithID(t *testing.T) {
+	ni := &pb.NeighborInfo{NodeId: 0x10}
+	payload, err := proto.Marshal(ni)
+	if err != nil {
+		t.Fatalf("marshal neighborinfo: %v", err)
+	}
+	d := &pb.Data{Portnum: pb.PortNum_NEIGHBORINFO_APP, Payload: payload}
+	mp := &pb.MeshPacket{From: 0x1, PayloadVariant: &pb.MeshPacket_Decoded{Decoded: d}}
+	fr := &pb.FromRadio{PayloadVariant: &pb.FromRadio_Packet{Packet: mp}}
+	data, err := proto.Marshal(fr)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	id, dec, err := DecodeNeighborInfoWithID(data, "latest")
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if id != 0x1 || dec.GetNodeId() != 0x10 {
+		t.Fatalf("decode mismatch: %x %+v", id, dec)
+	}
+}
+
+func protoInt32(v int32) *int32 { return &v }

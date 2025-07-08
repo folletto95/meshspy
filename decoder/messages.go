@@ -117,3 +117,105 @@ func DecodeText(data []byte, version string) (string, error) {
 		return "", fmt.Errorf("unsupported proto version: %s", version)
 	}
 }
+
+// DecodePositionWithID decodes a Position message and returns the sender node
+// id along with the Position message. The id is zero when not present.
+func DecodePositionWithID(data []byte, version string) (uint32, *latestpb.Position, error) {
+	var err error
+	data, err = stripFrame(data)
+	if err != nil {
+		return 0, nil, err
+	}
+	switch version {
+	case "", "latest", "2.1":
+		var fr latestpb.FromRadio
+		if err := proto.Unmarshal(data, &fr); err == nil {
+			if pkt := fr.GetPacket(); pkt != nil {
+				from := pkt.GetFrom()
+				if dec := pkt.GetDecoded(); dec != nil {
+					if dec.GetPortnum() == latestpb.PortNum_POSITION_APP {
+						var pos latestpb.Position
+						if err := proto.Unmarshal(dec.GetPayload(), &pos); err == nil {
+							return from, &pos, nil
+						}
+					}
+				}
+			}
+		}
+		var pos latestpb.Position
+		if err := proto.Unmarshal(data, &pos); err == nil && (pos.LatitudeI != nil || pos.LongitudeI != nil) {
+			return 0, &pos, nil
+		}
+		return 0, nil, fmt.Errorf("not a Position message")
+	default:
+		return 0, nil, fmt.Errorf("unsupported proto version: %s", version)
+	}
+}
+
+// DecodeWaypointWithID decodes a Waypoint message and returns the sender node id
+// along with the Waypoint. The id is zero when not present.
+func DecodeWaypointWithID(data []byte, version string) (uint32, *latestpb.Waypoint, error) {
+	var err error
+	data, err = stripFrame(data)
+	if err != nil {
+		return 0, nil, err
+	}
+	switch version {
+	case "", "latest", "2.1":
+		var fr latestpb.FromRadio
+		if err := proto.Unmarshal(data, &fr); err == nil {
+			if pkt := fr.GetPacket(); pkt != nil {
+				from := pkt.GetFrom()
+				if dec := pkt.GetDecoded(); dec != nil {
+					if dec.GetPortnum() == latestpb.PortNum_WAYPOINT_APP {
+						var wp latestpb.Waypoint
+						if err := proto.Unmarshal(dec.GetPayload(), &wp); err == nil {
+							return from, &wp, nil
+						}
+					}
+				}
+			}
+		}
+		var wp latestpb.Waypoint
+		if err := proto.Unmarshal(data, &wp); err == nil && wp.GetId() != 0 {
+			return 0, &wp, nil
+		}
+		return 0, nil, fmt.Errorf("not a Waypoint message")
+	default:
+		return 0, nil, fmt.Errorf("unsupported proto version: %s", version)
+	}
+}
+
+// DecodeNeighborInfoWithID decodes a NeighborInfo message and returns the sender
+// node id along with the NeighborInfo. The id is zero when not present.
+func DecodeNeighborInfoWithID(data []byte, version string) (uint32, *latestpb.NeighborInfo, error) {
+	var err error
+	data, err = stripFrame(data)
+	if err != nil {
+		return 0, nil, err
+	}
+	switch version {
+	case "", "latest", "2.1":
+		var fr latestpb.FromRadio
+		if err := proto.Unmarshal(data, &fr); err == nil {
+			if pkt := fr.GetPacket(); pkt != nil {
+				from := pkt.GetFrom()
+				if dec := pkt.GetDecoded(); dec != nil {
+					if dec.GetPortnum() == latestpb.PortNum_NEIGHBORINFO_APP {
+						var ni latestpb.NeighborInfo
+						if err := proto.Unmarshal(dec.GetPayload(), &ni); err == nil {
+							return from, &ni, nil
+						}
+					}
+				}
+			}
+		}
+		var ni latestpb.NeighborInfo
+		if err := proto.Unmarshal(data, &ni); err == nil && ni.GetNodeId() != 0 {
+			return 0, &ni, nil
+		}
+		return 0, nil, fmt.Errorf("not a NeighborInfo message")
+	default:
+		return 0, nil, fmt.Errorf("unsupported proto version: %s", version)
+	}
+}
