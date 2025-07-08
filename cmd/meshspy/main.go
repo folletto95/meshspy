@@ -159,8 +159,12 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	// 📡 Wait for the serial port to be available before running meshtastic-go
-	if err := serial.WaitForSerial(cfg.SerialPort, 30*time.Second); err != nil {
-		log.Fatalf("❌ Porta seriale %s non disponibile: %v", cfg.SerialPort, err)
+	for attempt := 1; ; attempt++ {
+		if err := serial.WaitForSerial(cfg.SerialPort, 30*time.Second); err == nil {
+			break
+		} else {
+			log.Printf("❌ Porta seriale %s non disponibile: %v (tentativo %d)", cfg.SerialPort, err, attempt)
+		}
 	}
 
 	// Send an Alive message to the node if requested
