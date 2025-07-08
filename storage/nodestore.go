@@ -3,6 +3,8 @@ package storage
 import (
 	"database/sql"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"time"
 
 	mqttpkg "meshspy/client"
@@ -27,6 +29,9 @@ type NodePosition struct {
 
 // NewNodeStore opens or creates a SQLite database at path and prepares the nodes table.
 func NewNodeStore(path string) (*NodeStore, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return nil, err
+	}
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
