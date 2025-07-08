@@ -102,7 +102,7 @@ func GetLocalNodeInfo(port string) (*NodeInfo, error) {
 				inNodeInfo = true
 				continue
 			} else {
-                                break // stop at the second node
+				break // stop at the second node
 			}
 		}
 
@@ -178,7 +178,8 @@ func ConnectMQTT(cfg config.Config) (mqtt.Client, error) {
 		SetClientID(cfg.ClientID).
 		SetAutoReconnect(true).
 		SetConnectRetry(true).
-		SetConnectRetryInterval(5 * time.Second)
+		SetConnectRetryInterval(5 * time.Second).
+		SetResumeSubs(true)
 
 	if cfg.User != "" {
 		opts.SetUsername(cfg.User)
